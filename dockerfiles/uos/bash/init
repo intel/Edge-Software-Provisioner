@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Copyright (C) 2019 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+source /opt/bootstrap/functions
+
+export CONSOLE_OUTPUT="/dev/console"
+
+kernel_params=$(cat /proc/cmdline)
+if [[ $kernel_params = *"bootstrap="* ]]; then
+	tmp="${kernel_params##*bootstrap=}"
+	param_bootstrap="${tmp%% *}"
+else
+	clear
+	echo "" 2>&1 | tee -a ${CONSOLE_OUTPUT}
+	echo "[            ] 'bootstrap' kernel parameter missing!" 2>&1 | tee -a ${CONSOLE_OUTPUT}
+	sleep 30
+	# reboot
+fi
+
+
+if [[ $kernel_params = *"httpserver="* ]]; then
+	tmp="${kernel_params##*httpserver=}"
+	param_httpserver="${tmp%% *}"
+else
+	clear
+	echo "" 2>&1 | tee -a ${CONSOLE_OUTPUT}
+	echo "[            ] 'httpserver' kernel parameter missing!" 2>&1 | tee -a ${CONSOLE_OUTPUT}
+	sleep 30
+	# reboot
+fi
+
+if [[ $kernel_params = *"token="* ]]; then
+	tmp="${kernel_params##*token=}"
+	param_token="${tmp%% *}"
+fi
+
+wget --header "Authorization: token ${param_token}" -O - ${param_bootstrap} 2> ${CONSOLE_OUTPUT} | bash -s - $param_httpserver
+

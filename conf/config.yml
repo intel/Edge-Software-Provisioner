@@ -1,0 +1,60 @@
+---
+
+# Copyright (C) 2019 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+# If omitted, the build script automatically sets the first
+# three octets (x.x.x.1) by inspecting an arbitrary outbound IP route.
+# This default behavior may not work if your network
+# is not a /24, so make sure to specify here if needed.
+# dhcp_range_minimum: 192.168.1.100
+# dhcp_range_maximum: 192.168.1.250
+# network_broadcast_ip: 192.168.1.255
+# network_gateway_ip: 192.168.1.1
+
+# If omitted, this is automatically determined
+# host_ip: 192.168.1.11
+
+# If omitted, defaults to 8.8.8.8
+# Note that the primary DNS is always host_ip
+# network_dns_primary: 8.8.4.4
+# network_dns_secondary: 8.8.8.8
+
+# Please make sure to define ALL of the variables below, even if they
+# are empty. Otherwise, this application will not be configured properly.
+profiles:
+  - git_remote_url: https://github.com/intel/rni-profile-base-clearlinux.git
+    profile_branch: slim
+    profile_base_branch: master
+    git_username: ""
+    git_token: ""
+    # This is the name that will be shown on the PXE menu (NOTE: No Spaces)
+    name: Clear_Linux
+    custom_git_arguments: --depth=1
+
+  - git_remote_url: https://github.com/intel/rni-profile-base-clearlinux.git
+    profile_branch: desktop
+    profile_base_branch: master
+    git_username: ""
+    git_token: ""
+    # This is the name that will be shown on the PXE menu (NOTE: No Spaces)
+    name: Clear_Linux_Desktop
+    custom_git_arguments: --depth=1
+
+  - git_remote_url: https://github.com/intel/rni-profile-base-ubuntu.git
+    profile_branch: slim
+    profile_base_branch: master
+    git_username: ""
+    git_token: ""
+    # This is the name that will be shown on the PXE menu (NOTE: No Spaces)
+    name: Ubuntu_18.04
+    custom_git_arguments: --depth=1
+
+  - git_remote_url: https://github.com/intel/rni-profile-base-ubuntu.git
+    profile_branch: desktop
+    profile_base_branch: master
+    git_username: ""
+    git_token: ""
+    # This is the name that will be shown on the PXE menu (NOTE: No Spaces)
+    name: Ubuntu_18.04_Desktop
+    custom_git_arguments: --depth=1

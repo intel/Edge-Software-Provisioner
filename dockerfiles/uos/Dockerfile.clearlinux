@@ -1,0 +1,44 @@
+# Copyright (C) 2020 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM alpine:3.10 as kernel-builder
+LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
+
+ARG CLEARLINUX_RELEASE=32380
+ARG KERNEL_VERSION=5.5.5-911
+ARG KERNEL_PREFIX
+
+RUN apk update && apk add --no-cache \
+	bash \
+    wget \
+	tar \
+    rpm \
+    cpio
+
+WORKDIR /build
+RUN mkdir /out
+
+RUN wget https://download.clearlinux.org/releases/${CLEARLINUX_RELEASE}/clear/x86_64/os/Packages/linux-${KERNEL_PREFIX}${KERNEL_VERSION}.x86_64.rpm
+RUN wget https://download.clearlinux.org/releases/${CLEARLINUX_RELEASE}/clear/x86_64/os/Packages/linux-${KERNEL_PREFIX}extra-${KERNEL_VERSION}.x86_64.rpm
+# RUN wget https://download.clearlinux.org/releases/${CLEARLINUX_RELEASE}/clear/x86_64/os/Packages/linux-dev-${KERNEL_VERSION}.x86_64.rpm
+
+#https://download.clearlinux.org/releases/current/clear/source/SRPMS/linux-4.20.7-694.src.rpm
+
+RUN rpm2cpio linux-${KERNEL_PREFIX}${KERNEL_VERSION}.x86_64.rpm | cpio -i --make-directories && \
+	rpm2cpio linux-${KERNEL_PREFIX}extra-${KERNEL_VERSION}.x86_64.rpm | cpio -i --make-directories && \
+	cp usr/lib/kernel/default-* /out/kernel && \
+	cp usr/lib/kernel/System* /out/System.map
+
+RUN rpm2cpio linux-${KERNEL_PREFIX}${KERNEL_VERSION}.x86_64.rpm | cpio -i --make-directories && \
+	mv usr/lib/kernel/ . && \
+	cd usr/ && tar cf /out/kernel.tar .
+
+# RUN rm -fr usr/ && \
+	# rpm2cpio linux-dev-${KERNEL_VERSION}.x86_64.rpm | cpio -i --make-directories && \
+	# cd usr/ && tar cf /out/kernel-headers.tar .
+
+FROM scratch
+ENTRYPOINT []
+CMD []
+WORKDIR /
+COPY --from=kernel-builder /out/* /

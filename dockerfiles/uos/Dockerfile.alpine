@@ -1,0 +1,43 @@
+# Copyright (C) 2019 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM alpine:3.9 as kernel-builder
+LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
+
+ARG ALPINELINUX_RELEASE=edge
+# ARG KERNEL_VERSION=4.19.26-r0
+# ARG KERNEL_PREFIX=vanilla
+
+RUN apk update && apk add --no-cache \
+    bash \
+    coreutils \
+    cpio \
+    curl \
+    gzip \
+    kmod \
+    rpm \
+    tar \
+    wget
+
+WORKDIR /build
+RUN mkdir /out
+
+RUN curl -s http://dl-cdn.alpinelinux.org/alpine/${ALPINELINUX_RELEASE}/main/x86_64/ | grep -Eo linux-vanilla-\[0-9\]\[\-\_\.0-9a-zA-Z\]+.apk | head -n1 > /tmp/KERNEL_FILE
+
+RUN KERNEL_FILE=$(cat /tmp/KERNEL_FILE) && wget http://dl-cdn.alpinelinux.org/alpine/${ALPINELINUX_RELEASE}/main/x86_64/${KERNEL_FILE}
+
+# wget http://dl-cdn.alpinelinux.org/alpine/edge/main/x86_64/linux-vanilla-4.19.26-r0.apk
+
+RUN KERNEL_FILE=$(cat /tmp/KERNEL_FILE) && gunzip -c < ${KERNEL_FILE} | tar xf - && \
+    cp boot/vmlinuz* /out/kernel && \
+    cp boot/System* /out/System.map
+
+RUN mkdir tmp/ && mv lib/ tmp/ && \
+    cd tmp/ && depmod -an -b . $(ls lib/modules/) > lib/modules/$(ls lib/modules/)/modules.dep && \
+    tar cf /out/kernel.tar .
+
+FROM scratch
+ENTRYPOINT []
+CMD []
+WORKDIR /
+COPY --from=kernel-builder /out/* /

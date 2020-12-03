@@ -1,0 +1,26 @@
+version: "2"
+
+networks:
+  gitea:
+    external: false
+
+services:
+  mirror:
+    image: gitea/gitea:1.12.6@sha256:0facddc4a9a1e384db5edb0a3586aa55d80a48a000a068c5864f25628c347727
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - DISABLE_REGISTRATION=true
+      - DEFAULT_PRIVATE=public
+      - ENABLE_PUSH_CREATE_USER=true
+      - ENABLE_PUSH_CREATE_ORG=true
+    restart: always
+    networks:
+      - gitea
+    volumes:
+      - ../../data/gitea:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "3003:3000"
+      - "222:22"

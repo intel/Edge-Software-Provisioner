@@ -1,0 +1,46 @@
+# Copyright (C) 2019 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Log files
+builder.log
+rni.log
+scripts/builder.log
+scripts/rni.log
+
+# Installation artifacts
+get-docker.sh
+
+# Debugging artifacts
+Success
+
+# Auto-generated Edge Software Provisioner files & directories
+data/
+data/etc/dnsmasq.conf
+data/srv/tftp/images/*
+data/srv/tftp/pxelinux.cfg/default
+data/srv/tftp/pxelinux.cfg/tmp_default
+data/usr/share/nginx/html/files/*
+data/usr/share/nginx/html/index.html
+data/usr/share/nginx/html/profile/*
+
+# Auto-generated Edge Software Provisioner backup files
+# They are automatically created using copySampleFile
+# and have the format abc_2019-03-19_11:34:47
+data/etc/dnsmasq.conf_*
+data/srv/tftp/pxelinux.cfg/default_*
+data/srv/tftp/pxelinux.cfg/tmp_default.modified*
+data/usr/share/nginx/html/kickstart/default/dyn-ks.yml
+data/usr/share/nginx/html/kickstart/default/dyn-ks.yml_*
+
+# Template staging files
+template/dnsmasq/dnsmasq.conf.modified*
+
+# Auto-generated UOS files & directories
+dockerfiles/uos/prep/
+dockerfiles/uos/uos-cmdline
+dockerfiles/uos/uos-initrd.img
+dockerfiles/uos/uos-kernel
+dockerfiles/uos/lib/docker
+
+# Configuration that should never be committed to git
+# conf/config.yml

@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# Copyright (C) 2019 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+rngd -r /dev/urandom
+
+/sbin/udevadm hwdb --update && /
+/sbin/udevd --debug --daemon
+
+export CONSOLE_OUTPUT="/dev/console"
+
+sleep 3
+
+echo "[            ] Updating system time..." 2>&1 | tee -a ${CONSOLE_OUTPUT}
+ntpd -d -N -q -n -p us.pool.ntp.org 2>&1 | tee -a ${CONSOLE_OUTPUT}
+
+echo "[            ] Discovering hardware..." 2>&1 | tee -a ${CONSOLE_OUTPUT}
+for f in $(ls /sys/bus/*/devices/*/modalias); do
+    modprobe -abq $(cat $f) >/dev/null 2>&1
+done
+
+sleep 1
+
+for f in $(ls /sys/bus/*/devices/*/modalias); do 
+    modprobe -abq $(cat $f) >/dev/null 2>&1
+done
+
+kernel_params=$(cat /proc/cmdline)
+if [[ $kernel_params = *"httpserver="* ]]; then
+	tmp="${kernel_params##*httpserver=}"
+	param_httpserver="${tmp%% *}"
+fi
+
+if [[ $kernel_params = *"proxy="* ]]; then
+	tmp="${kernel_params##*proxy=}"
+	param_proxy="${tmp%% *}"
+
+	export http_proxy=${param_proxy}
+	export https_proxy=${param_proxy}
+	export no_proxy="localhost,127.0.0.1,${param_httpserver}"
+	export HTTP_PROXY=${param_proxy}
+	export HTTPS_PROXY=${param_proxy}
+	export NO_PROXY="localhost,127.0.0.1,${param_httpserver}"
+fi
+
+iptables -L  >/dev/null 2>&1
+if [ $? = 0 ]; then
+    # /usr/local/bin/docker-init /usr/local/bin/dockerd &
+    /usr/local/bin/dockerd &
+else
+    /usr/local/bin/dockerd --iptables=false &
+fi
+
+while (! docker stats --no-stream > /dev/null ); do
+  # Docker takes a few seconds to initialize
+  echo "[            ] Waiting for Docker to launch..." 2>&1 | tee -a ${CONSOLE_OUTPUT}
+  sleep 3
+done
+
+/opt/bootstrap/init
+
+supervisord -n

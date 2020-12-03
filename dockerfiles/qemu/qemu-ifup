@@ -1,0 +1,2 @@
+ifconfig "$1" 0.0.0.0 up
+brctl addif $br "$1

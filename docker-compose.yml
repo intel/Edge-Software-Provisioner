@@ -1,0 +1,66 @@
+---
+
+# Copyright (C) 2019 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+version: '3'
+
+services:
+  web:
+    image: nginx:1.14.2-alpine
+    restart: always
+    ports:
+      - 80:80
+    volumes:
+      # Don't make these read-only, or else docker will fail to mount
+      - ./data/usr/share/nginx/html:/usr/share/nginx/html:shared
+      - ./data/srv/tftp:/usr/share/nginx/html/tftp
+      - ./template/nginx/index.html:/usr/share/nginx/html/index.html
+      - ./template/nginx/default.conf:/etc/nginx/conf.d/default.conf
+
+  dnsmasq:
+    image: builder-dnsmasq
+    restart: always
+    volumes:
+      - ./template/pxe_bg.png:/srv/tftp/pxe_bg.png
+      - ./template/pxe_bg.png:/srv/tftp/legacy/pxe_bg.png
+      - ./template/pxe_bg.png:/srv/tftp/efi32/pxe_bg.png
+      - ./template/pxe_bg.png:/srv/tftp/efi64/pxe_bg.png
+      - ./data/srv/tftp/images:/srv/tftp/images
+      - ./data/srv/tftp/images:/srv/tftp/legacy/images
+      - ./data/srv/tftp/images:/srv/tftp/efi32/images
+      - ./data/srv/tftp/images:/srv/tftp/efi64/images
+      - ./data/srv/tftp/pxelinux.cfg/default:/srv/tftp/pxelinux.cfg/default
+      - ./data/srv/tftp/pxelinux.cfg/default_legacy:/srv/tftp/legacy/pxelinux.cfg/default
+      - ./data/srv/tftp/pxelinux.cfg/default:/srv/tftp/efi32/pxelinux.cfg/default
+      - ./data/srv/tftp/pxelinux.cfg/default:/srv/tftp/efi64/pxelinux.cfg/default
+      - ./data/etc/dnsmasq.conf:/etc/dnsmasq.conf
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+
+  registry-mirror:
+    image: registry:2
+    restart: always
+    ports:
+      - 5557:5000
+    volumes:
+      - ./template/registry/registry.yml:/config.yml
+      - /var/lib/registry:/var/lib/registry
+    command: "/config.yml"
+
+  squid:
+    image: builder-squid
+    restart: always
+    environment:
+      - CN=squid.local
+      - O=squid
+      - OU=squid
+      - C=US
+    ports:
+      - 3128:3128
+      - 4128:4128
+    volumes:
+      - ./template/squid/squid.conf:/etc/squid/squid.conf
+      - /var/cache/squid:/var/spool/squid
+      - ./data/usr/share/nginx/html/squid-cert:/etc/squid-cert

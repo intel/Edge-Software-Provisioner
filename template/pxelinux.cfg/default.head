@@ -1,0 +1,52 @@
+# Copyright (C) 2019 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+DEFAULT menu.c32
+UI vesamenu.c32
+PROMPT 0
+TIMEOUT 200
+TOTALTIMEOUT 6000
+
+MENU RESOLUTION 800 600
+MENU TITLE | Build Options |
+MENU WIDTH 100
+MENU MARGIN 10
+MENU PASSWORDMARGIN 3
+MENU ROWS 27
+MENU TABMSGROW 33
+MENU CMDLINEROW 33
+MENU ENDROW -1
+MENU PASSWORDROW 26
+MENU TIMEOUTROW 35
+MENU HELPMSGROW 37
+MENU HELPMSGENDROW -1
+MENU HIDDENROW -2
+MENU HSHIFT 0
+MENU VSHIFT 0
+
+# Default to the first boot option if there is a timeout
+ONTIMEOUT local
+
+MENU BACKGROUND pxe_bg.png
+MENU COLOR screen      0  #808b8b8b #00000000 std
+MENU COLOR border      0  #ffffffff #ee000000 std
+MENU COLOR title       0  #ff6bbfff #ee000000 std
+MENU COLOR sel         0  #ff6bbfff #ee000000 std
+MENU COLOR hotsel      0  #ff9eff40 #ee000000 std
+MENU COLOR unsel       0  #55ffffff #ee000000 std
+MENU COLOR hotkey      0  #ff9eff40 #ee000000 std
+MENU COLOR tabmsg      0  #ffffffff #00000000 std
+MENU COLOR timeout_msg 0  #ff6bbfff #00000000 std
+MENU COLOR timeout     0  #c0ff2a2a #00000000 std
+MENU COLOR disabled    0  #807f7f7f #ee000000 std
+MENU COLOR cmdmark     0  #c000ffff #ee000000 std
+MENU COLOR cmdline     0  #c0ffffff #ee000000 std
+MENU COLOR scrollbar   0  #40000000 #00000000 std
+MENU COLOR pwdborder   0  #80ffffff #20ffffff std
+MENU COLOR pwdheader   0  #80ff8080 #20ffffff std
+MENU COLOR pwdentry    0  #80ffffff #20ffffff std
+MENU COLOR help        0  #c0ffffff #00000000 std
+
+LABEL local
+    MENU LABEL Boot local hard drive
+    LOCALBOOT -1

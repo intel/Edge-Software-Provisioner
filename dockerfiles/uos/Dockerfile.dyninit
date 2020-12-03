@@ -1,0 +1,60 @@
+# Copyright (C) 2020 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM docker:19.03.8-dind
+LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
+
+RUN apk update && apk add --no-cache \
+    bash \
+    ca-certificates \
+    coreutils \
+    cpio \
+    cryptsetup \
+    e2fsprogs \
+    e2fsprogs-extra \
+    eudev \
+    expect \
+    file \
+    git \
+    gnupg \
+    grub \
+    grub-efi \
+    grub-bios \
+    lddtree \
+    lshw \
+    lvm2 \
+    netcat-openbsd \
+    openssh-client \
+    openssl \
+    parted \
+    pciutils \
+    py2-pip \
+    rng-tools \
+    rsync \
+    supervisor \
+    syslinux \
+    util-linux \
+    wget \
+    xz
+
+RUN cp /etc/apk/repositories /etc/apk/repositories.bak && \
+    sed -i -e 's/v[[:digit:]]\+\.[[:digit:]]\+/edge/g' /etc/apk/repositories && \
+    echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
+
+RUN apk update && apk add --no-cache \
+    efibootmgr \
+    efitools \
+    sbsigntool
+
+RUN mv /etc/apk/repositories.bak /etc/apk/repositories && \
+    echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && \
+    apk update
+
+RUN echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
+
+RUN mkdir -p /opt/bootstrap
+COPY bash/init /opt/bootstrap/
+COPY bash/functions /opt/bootstrap/
+COPY bash/start /opt/bootstrap/
+ENTRYPOINT []
+CMD ["/bin/bash","/opt/bootstrap/start"]

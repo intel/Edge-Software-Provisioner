@@ -1,0 +1,48 @@
+---
+
+# Copyright (C) 2019 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+# If omitted, the build script automatically sets the first
+# three octets (x.x.x.1) by inspecting an arbitrary outbound IP route.
+# This default behavior may not work if your network
+# is not a /24, so make sure to specify here if needed.
+dhcp_range_minimum: 192.168.1.100
+dhcp_range_maximum: 192.168.1.250
+network_broadcast_ip: 192.168.1.255
+network_gateway_ip: 192.168.1.1
+
+# If omitted, this is automatically determined
+host_ip: 192.168.1.11
+
+# If omitted, defaults to 8.8.8.8
+# Note that the primary DNS is always host_ip
+network_dns_primary: 8.8.4.4
+network_dns_secondary: 8.8.8.8
+
+# Please make sure to define ALL of the variables below, even if they
+# are empty. Otherwise, this application will not be configured properly.
+profiles:
+  - git_remote_url: https://github.com/intel/rni-profile-clearLinux.git
+    profile_branch: desktop
+    profile_base_branch: master
+    # Username and token can be empty by specifying ""
+    git_username: YOUR_USERNAME
+    git_token: YOUR_TOKEN
+    # This is the name that will be shown on the PXE menu (NOTE: No Spaces)
+    name: Clear_Linux_desktop
+    # Can optionally specify empty values "" like this:
+    # custom_git_arguments: ""
+    custom_git_arguments: --depth=1
+
+  - git_remote_url: https://github.com/intel/rni-profile-clearLinux.git
+    profile_branch: legacy
+    profile_base_branch: None
+    # Username and token can be empty by specifying ""
+    git_username: YOUR_USERNAME
+    git_token: YOUR_TOKEN
+    # This is the name that will be shown on the PXE menu (NOTE: No Spaces)
+    name: Clear_Linux_desktop
+    # Can optionally specify empty values "" like this:
+    # custom_git_arguments: ""
+    custom_git_arguments: --depth=1

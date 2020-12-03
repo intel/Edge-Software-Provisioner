@@ -1,0 +1,4 @@
+
+LABEL local
+    MENU LABEL Boot local hard drive
+    LOCALBOOT -1
