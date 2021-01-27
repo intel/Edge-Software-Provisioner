@@ -130,27 +130,27 @@ if [[ "${BUILD_IMAGES}" == "true" ]]; then
 
     # Build the aws-cli image
     run "(1/5) Building builder-aws-cli" \
-        "DOCKER_BUILDKIT=1 docker build --rm ${DOCKER_BUILD_ARGS} -t builder-aws-cli dockerfiles/aws-cli" \
+        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-aws-cli dockerfiles/aws-cli" \
         ${LOG_FILE}
 
     # Build the wget image
     run "(2/5) Building builder-wget" \
-        "DOCKER_BUILDKIT=1 docker build --rm ${DOCKER_BUILD_ARGS} -t builder-wget dockerfiles/wget" \
+        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-wget dockerfiles/wget" \
         ${LOG_FILE}
 
     # Build the git image
     run "(3/5) Building builder-git" \
-        "DOCKER_BUILDKIT=1 docker build --rm ${DOCKER_BUILD_ARGS} -t builder-git dockerfiles/git" \
+        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-git dockerfiles/git" \
         ${LOG_FILE}
 
     # Build the dnsmasq image
     run "(4/5) Building builder-dnsmasq" \
-        "DOCKER_BUILDKIT=1 docker build --rm ${DOCKER_BUILD_ARGS} -t builder-dnsmasq dockerfiles/dnsmasq" \
+        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-dnsmasq dockerfiles/dnsmasq" \
         ${LOG_FILE}
 
     # Build the squid image
     run "(5/5) Building builder-squid" \
-        "DOCKER_BUILDKIT=1 docker build --rm ${DOCKER_BUILD_ARGS} -t builder-squid dockerfiles/squid" \
+        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-squid dockerfiles/squid" \
         ${LOG_FILE}
 
 else

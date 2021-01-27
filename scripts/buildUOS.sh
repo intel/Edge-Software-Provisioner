@@ -45,7 +45,7 @@ run "(3/10) Compiling tools" \
                 wget && \
             git clone https://github.com/linuxkit/linuxkit --depth 1 --branch v0.8 && \
             cd /linuxkit && make && \
-            docker -H unix:///tmp/host-docker/docker.sock build -t uosbuilder:${GIT_COMMIT} -f /uos/Dockerfile .' && \
+            docker -H unix:///tmp/host-docker/docker.sock build ${DOCKER_BUILD_ARGS} -t uosbuilder:${GIT_COMMIT} -f /uos/Dockerfile .' && \
         docker rm -f builder-docker && \
         rm -fr /tmp/builder; \
     fi" \
