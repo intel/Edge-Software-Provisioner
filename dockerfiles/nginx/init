@@ -1,0 +1,62 @@
+#!/bin/sh
+
+# Copyright (C) 2020 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+set -e
+
+prepare_folders() {
+	echo "Preparing folders..."
+	mkdir -p /etc/ssl/private/
+	mkdir -p /etc/ssl/cert/
+	mkdir -p /etc/nginx/conf.d/
+}
+
+create_cert() {
+	if [ ! -f /etc/ssl/private/EB_web.key ]; then
+		echo "Creating certificate..."
+		# The following is for creating V3 509 Certificates.  Does not work with self-signed added to trusted CA
+		# openssl req -new -newkey rsa:4096 -sha256 -days 3650 -nodes -x509 \
+		# 	-extensions v3_ca -keyout /etc/ssl/private/EB_web.key \
+		# 	-out /etc/ssl/cert/EB_web.crt \
+		# 	-subj "/CN=$CN/O=$O/OU=$OU/C=$C" -utf8 -nameopt multiline,utf8
+
+		openssl req -new -newkey rsa:4096 -sha256 -days 3650 -nodes -x509 \
+			-keyout /etc/ssl/private/EB_web.key \
+			-out /etc/ssl/cert/EB_web.crt \
+			-subj "/CN=$CN/O=$O/OU=$OU/C=$C" -utf8 -nameopt multiline,utf8
+		
+		cat /etc/ssl/private/EB_web.key /etc/ssl/cert/EB_web.crt > /etc/ssl/private/EB_web.pem
+
+		openssl x509 -in /etc/ssl/private/EB_web.pem \
+			-outform DER -out /etc/ssl/cert/EB_web.der
+
+		openssl x509 -inform DER -in /etc/ssl/cert/EB_web.der \
+			-out /etc/ssl/cert/EB_web.pem
+
+		# cp /etc/ssl/private/private.pem /etc/ssl/private/sync.pem
+		# chmod a+r /etc/ssl/private/sync.pem
+
+		# openssl dhparam -out /etc/nginx/dhparam.pem 4096
+	else
+		echo "Certificate found..."
+	fi
+}
+
+download_cerbot() {
+	if [ ! -f "/etc/nginx/conf.d/options-ssl-nginx.conf" ] || [ ! -f "/etc/nginx/conf.d/ssl-dhparams.pem" ]; then
+		echo "Downloading recommended TLS parameters from Certbot..."
+		wget -qO - https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > /etc/nginx/conf.d/options-ssl-nginx.conf
+		wget -qO - https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > /etc/nginx/ssl-dhparams.pem
+	fi
+}
+
+run() {
+	prepare_folders
+	create_cert
+	download_cerbot
+	echo "Starting Nginx..."
+	exec nginx-debug -g "daemon off;"
+}
+
+run

@@ -7,14 +7,22 @@ version: '3'
 
 services:
   web:
-    image: nginx:1.14.2-alpine
+    image: builder-web
     restart: always
+    environment:
+      - CN=edgebuilder.local
+      - O=edgebuilder
+      - OU=edgebuilder
+      - C=US
     ports:
       - 80:80
+      - 443:443
     volumes:
       # Don't make these read-only, or else docker will fail to mount
       - ./data/usr/share/nginx/html:/usr/share/nginx/html:shared
       - ./data/srv/tftp:/usr/share/nginx/html/tftp
+      - ./data/etc/ssl/private:/etc/ssl/private
+      - ./data/usr/share/nginx/html/web-cert:/etc/ssl/cert
       - ./template/nginx/index.html:/usr/share/nginx/html/index.html
       - ./template/nginx/default.conf:/etc/nginx/conf.d/default.conf
 

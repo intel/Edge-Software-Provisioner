@@ -129,28 +129,33 @@ if [[ "${BUILD_IMAGES}" == "true" ]]; then
     # reduces the footprint of our application
 
     # Build the aws-cli image
-    run "(1/5) Building builder-aws-cli" \
+    run "(1/6) Building builder-aws-cli" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-aws-cli dockerfiles/aws-cli" \
         ${LOG_FILE}
 
     # Build the wget image
-    run "(2/5) Building builder-wget" \
+    run "(2/6) Building builder-wget" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-wget dockerfiles/wget" \
         ${LOG_FILE}
 
     # Build the git image
-    run "(3/5) Building builder-git" \
+    run "(3/6) Building builder-git" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-git dockerfiles/git" \
         ${LOG_FILE}
 
     # Build the dnsmasq image
-    run "(4/5) Building builder-dnsmasq" \
+    run "(4/6) Building builder-dnsmasq" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-dnsmasq dockerfiles/dnsmasq" \
         ${LOG_FILE}
 
     # Build the squid image
-    run "(5/5) Building builder-squid" \
+    run "(5/6) Building builder-squid" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-squid dockerfiles/squid" \
+        ${LOG_FILE}
+
+    # Build the web image
+    run "(6/6) Building builder-web" \
+        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-web dockerfiles/nginx" \
         ${LOG_FILE}
 
 else
