@@ -629,7 +629,7 @@ genProfilePxeMenu() {
         kernelArgs="${uosInitrdKernelArg} ${kernelArgs}"
     fi
 
-    if [[ -n "${profile_config_kernel_arguments}" ]]; then
+    if [[ -n "${profile_config_kernel_arguments-}" ]]; then
         kernelArgs="${kernelArgs} ${profile_config_kernel_arguments}"
     fi
 
@@ -758,7 +758,7 @@ genProfileVirtualPxeBoot() {
         local initrdPath="data/srv/tftp/images/uos/initrd"
     fi
 
-    if [[ -n "${profile_config_kernel_arguments}" ]]; then
+    if [[ -n "${profile_config_kernel_arguments-}" ]]; then
         kernelArgs="${kernelArgs} ${profile_config_kernel_arguments}"
     fi
 
