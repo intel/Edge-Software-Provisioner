@@ -43,4 +43,4 @@ dockerfiles/uos/uos-kernel
 dockerfiles/uos/lib/docker
 
 # Configuration that should never be committed to git
-# conf/config.yml
+conf/config.yml

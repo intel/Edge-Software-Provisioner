@@ -20,6 +20,7 @@ printHelp() {
     printMsg "  ${T_BOLD}-f${T_RESET}, --skip-files           Skips syncronizing the files for profiles"
     printMsg "  ${T_BOLD}-s${T_RESET}, --skip-build-uos       Skips building the Utility Operating System (UOS)"
     printMsg "  ${T_BOLD}-S${T_RESET}, --skip-image-builds    Skips building all images and UOS"
+    printMsg "  ${T_BOLD}-k${T_RESET}, --uos-kernel           Valid input value is [ clearlinux | fedora | alpine ].  Defaults to 'clearlinux'."
     printMsg "  ${T_BOLD}-c${T_RESET}, --clean-uos            will clean the intermediary docker images used during building of UOS"
     printMsg "  ${T_BOLD}-b${T_RESET}, --skip-backups         Skips the creation of backup files inside the data directory when re-running build.sh"
     printMsg "  ${T_BOLD}--profile${T_RESET}                  Synchronize a specific profile and skip all others"
@@ -30,14 +31,15 @@ printHelp() {
     exit 0
 }
 
-UOS_CLEAN="false"
-BUILD_UOS="true"
-BUILD_IMAGES="true"
-SKIP_FILES="false"
-SKIP_BACKUPS="false"
-SKIP_PROFILES="false"
-SKIP_PROFILE_BUILDS="false"
-SINGLE_PROFILE=""
+export UOS_CLEAN="false"
+export BUILD_UOS="true"
+export BUILD_IMAGES="true"
+export UOS_KERNEL="clearlinux"
+export SKIP_FILES="false"
+export SKIP_BACKUPS="false"
+export SKIP_PROFILES="false"
+export SKIP_PROFILE_BUILDS="false"
+export SINGLE_PROFILE=""
 while (( "$#" )); do
     case "$1" in
         "-c" | "--clean-uos"           )    export UOS_CLEAN="true"
@@ -54,6 +56,8 @@ while (( "$#" )); do
                                             shift 1;;
         "-P" | "--skip-profiles"       )    export SKIP_PROFILES="true"
                                             shift 1;;
+        "-k" | "--uos-kernel"          )    export UOS_KERNEL=$2
+                                            shift 2;;
         "-l" | "--profile"             )    export SINGLE_PROFILE=$2
                                             shift 2;;
         "-h" | "--help"                )    printHelp;;
@@ -129,33 +133,38 @@ if [[ "${BUILD_IMAGES}" == "true" ]]; then
     # reduces the footprint of our application
 
     # Build the aws-cli image
-    run "(1/6) Building builder-aws-cli" \
+    run "(1/7) Building builder-aws-cli" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-aws-cli dockerfiles/aws-cli" \
         ${LOG_FILE}
 
     # Build the wget image
-    run "(2/6) Building builder-wget" \
+    run "(2/7) Building builder-wget" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-wget dockerfiles/wget" \
         ${LOG_FILE}
 
     # Build the git image
-    run "(3/6) Building builder-git" \
+    run "(3/7) Building builder-git" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-git dockerfiles/git" \
         ${LOG_FILE}
 
     # Build the dnsmasq image
-    run "(4/6) Building builder-dnsmasq" \
+    run "(4/7) Building builder-dnsmasq" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-dnsmasq dockerfiles/dnsmasq" \
         ${LOG_FILE}
 
     # Build the squid image
-    run "(5/6) Building builder-squid" \
+    run "(5/7) Building builder-squid" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-squid dockerfiles/squid" \
         ${LOG_FILE}
 
     # Build the web image
-    run "(6/6) Building builder-web" \
+    run "(6/7) Building builder-web" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-web dockerfiles/nginx" \
+        ${LOG_FILE}
+
+    # Build the gitea image
+    run "(7/7) Building builder-gitea" \
+        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-gitea dockerfiles/gitea" \
         ${LOG_FILE}
 
 else

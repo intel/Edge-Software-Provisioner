@@ -1,11 +1,11 @@
 # Copyright (C) 2020 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM alpine:3.10 as kernel-builder
+FROM alpine:3.12 as kernel-builder
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-ARG CLEARLINUX_RELEASE=32380
-ARG KERNEL_VERSION=5.5.5-911
+ARG CLEARLINUX_RELEASE=34270
+ARG KERNEL_VERSION=5.10.15-1024
 ARG KERNEL_PREFIX
 
 RUN apk update && apk add --no-cache \

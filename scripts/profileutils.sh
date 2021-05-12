@@ -58,6 +58,8 @@ cloneProfile() {
         fi
     fi
 
+    mkdir -p ${WEB_PROFILE}/${name}
+
     if [ -d ${WEB_PROFILE}/${name}/.git ]; then
         local git_current_remote_url=$(docker run --rm ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${name}:/tmp/profiles -w /tmp/profiles builder-git git remote get-url --all origin)
         local git_current_branch_name=$(docker run --rm ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${name}:/tmp/profiles -w /tmp/profiles builder-git git rev-parse --abbrev-ref HEAD)
@@ -86,7 +88,7 @@ cloneProfile() {
         fi
 
         run "  ${C_GREEN}${name}${T_RESET}: Cloning branch ${git_branch_name} on repo ${git_remote_url} with ssh-agent" \
-            "docker run --rm ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}:/tmp/profiles -w /tmp/profiles builder-git git clone ${custom_git_arguments} -v --progress ${git_clone_target} --branch=${git_branch_name} ${name}" \
+            "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}:/tmp/profiles -w /tmp/profiles builder-git git clone ${custom_git_arguments} -v --progress ${git_clone_target} --branch=${git_branch_name} ${name}" \
             ${LOG_FILE}
     else
         printDatedMsg "  Clone - ${C_GREEN}${name}${T_RESET} already exists."
@@ -96,6 +98,7 @@ cloneProfile() {
     if [[ $(validateEmptyInput "${git_base_branch_name}") == "" ]]; then
         printDatedMsg "  Clone - ${C_GREEN}${name}${T_RESET} doesn't have any base profile."
     else
+        mkdir -p ${WEB_PROFILE}/${base_name}
         if [ -d ${WEB_PROFILE}/${base_name}/.git ]; then
             local git_current_remote_url=$(docker run --rm ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles -w /tmp/profiles builder-git git remote get-url --all origin)
             local git_current_branch_name=$(docker run --rm ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles -w /tmp/profiles builder-git git rev-parse --abbrev-ref HEAD)
@@ -123,7 +126,7 @@ cloneProfile() {
                 logInfoMsg "Clone - No Git authentication method found (git_username/git_token, or SSH-Agent)."
             fi
             run "  ${C_GREEN}${base_name}${T_RESET}: Cloning branch ${git_base_branch_name} on repo ${git_remote_url}" \
-                "docker run --rm ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}:/tmp/profiles -w /tmp/profiles builder-git git clone ${custom_git_arguments} -v --progress ${git_clone_target} --branch=${git_base_branch_name} ${base_name}" \
+                "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}:/tmp/profiles -w /tmp/profiles builder-git git clone ${custom_git_arguments} -v --progress ${git_clone_target} --branch=${git_base_branch_name} ${base_name}" \
                 ${LOG_FILE}
         else
             printDatedMsg "  Clone - ${C_GREEN}${base_name}${T_RESET} already exists."
@@ -153,7 +156,7 @@ resetProfile() {
 
     if [ -d ${WEB_PROFILE}/${name}/.git ]; then
         run "  ${C_GREEN}${name}${T_RESET}: Resetting branch ${git_branch_name}" \
-            "docker run --rm ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${name}:/tmp/profiles/${name} -w /tmp/profiles/${name} builder-git git reset --hard HEAD" \
+            "docker run --rm --privileged ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${name}:/tmp/profiles/${name} -w /tmp/profiles/${name} builder-git git reset --hard HEAD" \
             ${LOG_FILE}
     else
         printDatedMsg "Profile ${C_GREEN}${name}${T_RESET} either is improperly configured or does not exist."
@@ -166,7 +169,7 @@ resetProfile() {
     else
         if [ -d ${WEB_PROFILE}/${base_name}/.git ]; then
             run "  ${C_GREEN}${base_name}${T_RESET}: Resetting branch ${git_base_branch_name}" \
-                "docker run --rm ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles/${base_name} -w /tmp/profiles/${base_name} builder-git git reset --hard HEAD" \
+                "docker run --rm --privileged ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles/${base_name} -w /tmp/profiles/${base_name} builder-git git reset --hard HEAD" \
                 ${LOG_FILE}
         else
             printDatedMsg "Profile ${C_GREEN}${base_name}${T_RESET} either is improperly configured or does not exist."
@@ -215,7 +218,7 @@ pullProfile() {
             logInfoMsg "No Git authentication method found (git_username/git_token, or SSH-Agent)."
         fi
         run "  ${C_GREEN}${name}${T_RESET}: Pulling latest from ${git_branch_name} on repo ${git_remote_url}" \
-            "docker run --rm ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/${name}:/tmp/profiles/${name} -w /tmp/profiles/${name} builder-git sh -c 'git fetch origin ${git_branch_name} && git reset --hard origin/${git_branch_name} && git pull origin ${git_branch_name}'" \
+            "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/${name}:/tmp/profiles/${name} -w /tmp/profiles/${name} builder-git sh -c 'git fetch origin ${git_branch_name} && git reset --hard origin/${git_branch_name} && git pull origin ${git_branch_name}'" \
             ${LOG_FILE}
     else
         printDatedErrMsg "Profile ${name} either is improperly configured or does not exist."
@@ -248,7 +251,7 @@ pullProfile() {
                 logInfoMsg "Pull - No Git authentication method found (git_username/git_token, or SSH-Agent)."
             fi
             run "  ${C_GREEN}${base_name}${T_RESET}: Pulling latest from ${git_base_branch_name} on repo ${git_remote_url}" \
-                "docker run --rm ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles/${base_name} -w /tmp/profiles/${base_name} builder-git sh -c 'git fetch origin ${git_base_branch_name} && git reset --hard origin/${git_base_branch_name} && git pull origin ${git_base_branch_name}'" \
+                "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles/${base_name} -w /tmp/profiles/${base_name} builder-git sh -c 'git fetch origin ${git_base_branch_name} && git reset --hard origin/${git_base_branch_name} && git pull origin ${git_base_branch_name}'" \
                 ${LOG_FILE}
         else
             printDatedErrMsg "Profile ${base_name} either is improperly configured or does not exist."
@@ -1003,26 +1006,18 @@ syncProfiles() {
 }
 
 startGitea() {
-    if docker ps | grep gitea_mirror_1 > /dev/null; then
+    if docker ps | grep $(basename $(pwd))_mirror_1 > /dev/null; then
         printDatedInfoMsg "Gitea already running"
         logInfoMsg "Gitea already running"
     else 
         local message="Starting Gitea"
-        if [ -d data/gitea/gitea/conf ]; then
-            logInfoMsg "GitTea folder exists"
+        if podman -v >/dev/null 2>&1; then
             run "${message}" \
-                "docker-compose -f dockerfiles/gitea/docker-compose.yml up -d && sleep 5" \
+                "scripts/espctl.sh up mirror && sleep 5" \
                 "${LOG_FILE}"
         else
-            logInfoMsg "GitTea folder doesn't exist"
             run "${message}" \
-                "docker-compose -f dockerfiles/gitea/docker-compose.yml up -d && \
-                sleep 5 && \
-                sed -i 's/INSTALL_LOCK[ \t]*= false/INSTALL_LOCK   = true/' data/gitea/gitea/conf/app.ini && \
-                sed -i 's/\[repository\]/\[repository\]\nDEFAULT_PRIVATE=public\nENABLE_PUSH_CREATE_USER=true\nENABLE_PUSH_CREATE_ORG=true/' data/gitea/gitea/conf/app.ini && \
-                docker-compose -f dockerfiles/gitea/docker-compose.yml restart && \
-                sleep 5 && \
-                docker exec -i gitea_mirror_1 sh -c 'while (! gitea admin create-user --admin --username mirror --password mirror --email mirror@localhost --must-change-password=false ); do echo \"Waiting for Gitea Database\"; sleep 5; done'" \
+                "docker-compose up -d mirror -d && sleep 5" \
                 "${LOG_FILE}"
         fi
     fi

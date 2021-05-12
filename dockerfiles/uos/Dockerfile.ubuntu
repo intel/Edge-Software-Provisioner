@@ -1,0 +1,47 @@
+# Copyright (C) 2020 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM alpine:3.12 as kernel-builder
+LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
+
+ARG UBUNTU_RELEASE=5.8.0-42-generic
+ARG KERNEL_VERSION=5.8.0-42.47_amd64
+ARG KERNEL_PREFIX
+
+RUN apk update && apk add --no-cache \
+		bash \
+		wget \
+		tar \
+		rpm \
+		cpio \
+		binutils \
+		xz
+
+WORKDIR /build
+RUN mkdir /out
+
+# List of kernels
+#  wget -qO - https://mirrors.kernel.org/ubuntu/pool/main/l/linux/ | sed -n 's/.*href="\([^"]*\).*/\1/p' | grep -o "linux-image-unsigned-[0-9]\.[0-9]\+\.[0-9]\+-[0-9]\+-generic_[^ ]\+amd64\.deb"
+
+RUN wget http://mirrors.edge.kernel.org/ubuntu/pool/main/l/linux/linux-image-unsigned-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
+		wget http://mirrors.edge.kernel.org/ubuntu/pool/main/l/linux/linux-modules-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
+		wget http://mirrors.edge.kernel.org/ubuntu/pool/main/l/linux/linux-modules-extra-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb
+
+RUN ar x linux-image-unsigned-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
+		xz -cd data.tar.xz | tar xf - && \
+		ar x linux-modules-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
+		xz -cd data.tar.xz | tar xf - && \
+		ar x linux-modules-extra-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
+		xz -cd data.tar.xz | tar xf - && \
+		for d in lib/modules/*; do depmod -b . $(basename $d); done && \
+		cp boot/vmlinuz* /out/kernel && \
+		cp boot/config* /out/kernel_config && \
+		cp boot/System* /out/System.map && \
+		tar cf /out/kernel.tar lib && \
+		tar cf /out/kernel-dev.tar usr || true
+
+FROM scratch
+ENTRYPOINT []
+CMD []
+WORKDIR /
+COPY --from=kernel-builder /out/* /

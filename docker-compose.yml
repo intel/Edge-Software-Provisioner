@@ -5,6 +5,10 @@
 
 version: '3'
 
+networks:
+  gitea:
+    external: false
+
 services:
   web:
     image: builder-web
@@ -14,6 +18,14 @@ services:
       - O=edgebuilder
       - OU=edgebuilder
       - C=US
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+      - ftp_proxy=${ftp_proxy}
+      - no_proxy=${no_proxy}
+      - HTTP_PROXY=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - FTP_PROXY=${FTP_PROXY}
+      - NO_PROXY=${NO_PROXY}
     ports:
       - 80:80
       - 443:443
@@ -29,6 +41,15 @@ services:
   dnsmasq:
     image: builder-dnsmasq
     restart: always
+    environment:
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+      - ftp_proxy=${ftp_proxy}
+      - no_proxy=${no_proxy}
+      - HTTP_PROXY=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - FTP_PROXY=${FTP_PROXY}
+      - NO_PROXY=${NO_PROXY}
     volumes:
       - ./template/pxe_bg.png:/srv/tftp/pxe_bg.png
       - ./template/pxe_bg.png:/srv/tftp/legacy/pxe_bg.png
@@ -50,6 +71,15 @@ services:
   registry-mirror:
     image: registry:2
     restart: always
+    environment:
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+      - ftp_proxy=${ftp_proxy}
+      - no_proxy=${no_proxy}
+      - HTTP_PROXY=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - FTP_PROXY=${FTP_PROXY}
+      - NO_PROXY=${NO_PROXY}
     ports:
       - 5557:5000
     volumes:
@@ -65,6 +95,14 @@ services:
       - O=squid
       - OU=squid
       - C=US
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+      - ftp_proxy=${ftp_proxy}
+      - no_proxy=${no_proxy}
+      - HTTP_PROXY=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - FTP_PROXY=${FTP_PROXY}
+      - NO_PROXY=${NO_PROXY}
     ports:
       - 3128:3128
       - 4128:4128
@@ -72,3 +110,38 @@ services:
       - ./template/squid/squid.conf:/etc/squid/squid.conf
       - /var/cache/squid:/var/spool/squid
       - ./data/usr/share/nginx/html/squid-cert:/etc/squid-cert
+
+  mirror:
+    image: builder-gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - DISABLE_REGISTRATION=true
+      - DEFAULT_PRIVATE=public
+      - ENABLE_PUSH_CREATE_USER=true
+      - ENABLE_PUSH_CREATE_ORG=true
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+      - ftp_proxy=${ftp_proxy}
+      - no_proxy=${no_proxy}
+      - HTTP_PROXY=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - FTP_PROXY=${FTP_PROXY}
+      - NO_PROXY=${NO_PROXY}
+    restart: always
+    networks:
+      - gitea
+    volumes:
+      - ./data/gitea:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "3003:3000"
+      - "222:22"
+    depends_on: 
+      - core
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "1m"

@@ -1,0 +1,42 @@
+# Copyright (C) 2020 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM fedora:32 as kernel-builder
+LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
+
+ARG KERNEL_VERSION=5.6.6-300.fc32.x86_64
+ARG KERNEL_PREFIX
+ARG FEDORA_RELEASE=32
+
+RUN dnf install -y \
+    wget \
+    tar \
+    kmod \
+    cpio
+
+WORKDIR /build
+RUN mkdir /out
+
+RUN wget https://download-ib01.fedoraproject.org/pub/fedora/linux/releases/${FEDORA_RELEASE}/Everything/x86_64/os/Packages/k/kernel-${KERNEL_VERSION}.rpm && \
+    wget https://download-ib01.fedoraproject.org/pub/fedora/linux/releases/${FEDORA_RELEASE}/Everything/x86_64/os/Packages/k/kernel-core-${KERNEL_VERSION}.rpm && \
+    wget https://download-ib01.fedoraproject.org/pub/fedora/linux/releases/${FEDORA_RELEASE}/Everything/x86_64/os/Packages/k/kernel-modules-${KERNEL_VERSION}.rpm && \
+    wget https://download-ib01.fedoraproject.org/pub/fedora/linux/releases/${FEDORA_RELEASE}/Everything/x86_64/os/Packages/k/kernel-modules-extra-${KERNEL_VERSION}.rpm && \
+    wget https://download-ib01.fedoraproject.org/pub/fedora/linux/releases/${FEDORA_RELEASE}/Everything/x86_64/os/Packages/k/kernel-modules-internal-${KERNEL_VERSION}.rpm
+
+RUN rpm2cpio kernel-${KERNEL_VERSION}.rpm | cpio -i --make-directories && \
+    rpm2cpio kernel-core-${KERNEL_VERSION}.rpm | cpio -i --make-directories && \
+    rpm2cpio kernel-modules-${KERNEL_VERSION}.rpm | cpio -i --make-directories && \
+    rpm2cpio kernel-modules-extra-${KERNEL_VERSION}.rpm | cpio -i --make-directories && \
+    rpm2cpio kernel-modules-internal-${KERNEL_VERSION}.rpm | cpio -i --make-directories && \
+    for d in lib/modules/*; do depmod -b . $(basename $d); done && \
+    mv lib/modules/*/vmlinuz* /out/kernel && \
+    mv lib/modules/*/config* /out/kernel_config && \
+    mv lib/modules/*/System* /out/System.map && \
+    tar cf /out/kernel.tar lib && \
+    tar cf /out/kernel-dev.tar usr || true
+
+FROM scratch
+ENTRYPOINT []
+CMD []
+WORKDIR /
+COPY --from=kernel-builder /out/* /

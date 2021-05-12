@@ -21,40 +21,97 @@ if [ -z ${GIT_COMMIT} ]; then
 fi
 cd dockerfiles/uos
 printDatedMsg "This can take a few minutes..."
-run "(1/10) Downloading and preparing the kernel" \
-    "docker build --rm ${DOCKER_BUILD_ARGS} -t clearlinux/kernel:5.5.5-911 -f ./Dockerfile.clearlinux ." \
-    ../../${LOG_FILE}
-run "(2/10) Downloading and preparing the initrd" \
-    "docker build --rm ${DOCKER_BUILD_ARGS} -t builder/dyninit:v1.0 -f ./Dockerfile.dyninit ." \
-    ../../${LOG_FILE}
-run "(3/10) Compiling tools" \
-    "if docker images | grep uosbuilder:${GIT_COMMIT}; then \
-        echo 'uosbuilder exists'; \
-    else \
-        docker rmi -f $(docker images | grep uosbuilder | awk '{print $3}'); \
-        docker rm -f builder-docker >/dev/null 2>&1; \
-        rm -fr /tmp/builder && \
-        docker run -d --privileged --name builder-docker ${DOCKER_RUN_ARGS} -v /tmp/builder:/var/run -v $(pwd)/lib/docker:/var/lib/docker docker:19.03.8-dind && \
-        sleep 30 && \
-        docker run -t ${DOCKER_RUN_ARGS} --rm -v $(pwd):/uos -v /tmp/builder:/var/run -v /var/run:/tmp/host-docker docker:19.03.8-dind sh -c '\
-            apk update && apk add --no-cache \
-                alpine-sdk \
-                coreutils \
-                git \
-                rsync \
-                wget && \
-            git clone https://github.com/linuxkit/linuxkit --depth 1 --branch v0.8 && \
-            cd /linuxkit && make && \
-            docker -H unix:///tmp/host-docker/docker.sock build ${DOCKER_BUILD_ARGS} -t uosbuilder:${GIT_COMMIT} -f /uos/Dockerfile .' && \
-        docker rm -f builder-docker && \
-        rm -fr /tmp/builder; \
-    fi" \
-    ../../${LOG_FILE}
-run "(4/10) Building UOS" \
-    "docker run -t --rm ${DOCKER_RUN_ARGS} -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/uos uosbuilder:${GIT_COMMIT} -c 'cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos.yml'" \
-    ../../${LOG_FILE}
+if podman -v >/dev/null 2>&1; then
+    touch /etc/containers/nodocker
+    run "(0/10) Preparing Host Docker" \
+        "docker rm hostbuilder-docker -f >/dev/null 2>&1; \
+        mkdir -p /tmp/host-builder && \
+        mkdir -p $(pwd)/lib/docker-host && \
+        docker run -d --privileged --name hostbuilder-docker ${DOCKER_RUN_ARGS} -v /tmp/host-builder:/var/run -v $(pwd)/lib/docker-host:/var/lib/docker -v /lib/modules:/lib/modules docker:19.03.8-dind && \
+        sleep 10" \
+        ../../${LOG_FILE}
+    run "(1/10) Downloading and preparing the kernel" \
+        "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v $(pwd):/uos -v /tmp/host-builder:/var/run docker:19.03.8-dind sh -c '\
+        cd /uos && \
+        docker build --rm ${DOCKER_BUILD_ARGS} -t uos/kernel -f ./Dockerfile.${UOS_KERNEL} .'" \
+        ../../${LOG_FILE}
+    run "(2/10) Downloading and preparing the initrd" \
+        "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v $(pwd):/uos -v /tmp/host-builder:/var/run docker:19.03.8-dind sh -c '\
+        cd /uos && \
+        docker build --rm ${DOCKER_BUILD_ARGS} -t builder/dyninit:v1.0 -f ./Dockerfile.dyninit .'" \
+        ../../${LOG_FILE}
+    run "(3/10) Compiling tools" \
+        "if docker images | grep uosbuilder:${GIT_COMMIT}; then \
+            echo 'uosbuilder exists'; \
+        else \
+            if docker images | grep builder-uos; then \
+                docker rmi -f $(docker images | grep uosbuilder | awk '{print $3}'); \
+            fi; \
+            docker rm -f builder-docker >/dev/null 2>&1; \
+            rm -fr /tmp/builder && \
+            mkdir -p /tmp/builder && \
+            mkdir -p $(pwd)/lib/docker && \
+            docker run -d --privileged --name builder-docker ${DOCKER_RUN_ARGS} -v /tmp/builder:/var/run -v $(pwd)/lib/docker:/var/lib/docker docker:19.03.8-dind && \
+            sleep 10 && \
+            docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v $(pwd):/uos -v /tmp/builder:/var/run -v /tmp/host-builder:/tmp/host-docker docker:19.03.8-dind sh -c '\
+                apk update && apk add --no-cache \
+                    alpine-sdk \
+                    coreutils \
+                    git \
+                    rsync \
+                    wget && \
+                git clone https://github.com/linuxkit/linuxkit --depth 1 --branch v0.8 && \
+                cd /linuxkit && make && \
+                docker -H unix:///tmp/host-docker/docker.sock build ${DOCKER_BUILD_ARGS} -t uosbuilder:${GIT_COMMIT} -f /uos/Dockerfile . && \
+                docker -H unix:///tmp/host-docker/docker.sock save uosbuilder:${GIT_COMMIT} > /tmp/host-docker/uosbuilder.tar' && \
+            docker load < /tmp/host-builder/uosbuilder.tar
+            docker rm -f builder-docker && \
+            rm -fr /tmp/builder; \
+        fi" \
+        ../../${LOG_FILE}
+    run "(4/10) Building UOS" \
+        "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v /tmp/host-builder:/var/run -v $(pwd):/uos uosbuilder:${GIT_COMMIT} -c 'cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos.yml' && \
+        docker rm -f hostbuilder-docker && \
+        rm -fr /tmp/host-builder" \
+        ../../${LOG_FILE}
+else
+    run "(1/10) Downloading and preparing the kernel" \
+        "docker build --rm ${DOCKER_BUILD_ARGS} -t uos/kernel -f ./Dockerfile.${UOS_KERNEL} ." \
+        ../../${LOG_FILE}
+    run "(2/10) Downloading and preparing the initrd" \
+        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder/dyninit:v1.0 -f ./Dockerfile.dyninit ." \
+        ../../${LOG_FILE}
+    run "(3/10) Compiling tools" \
+        "if docker images | grep uosbuilder:${GIT_COMMIT}; then \
+            echo 'uosbuilder exists'; \
+        else \
+            if docker images | grep builder-uos; then \
+                docker rmi -f $(docker images | grep uosbuilder | awk '{print $3}'); \
+            fi; \
+            docker rm -f builder-docker >/dev/null 2>&1; \
+            rm -fr /tmp/builder && \
+            docker run -d --privileged --name builder-docker ${DOCKER_RUN_ARGS} -v /tmp/builder:/var/run -v $(pwd)/lib/docker:/var/lib/docker docker:19.03.8-dind && \
+            sleep 30 && \
+            docker run -t ${DOCKER_RUN_ARGS} --rm -v $(pwd):/uos -v /tmp/builder:/var/run -v /var/run:/tmp/host-docker docker:19.03.8-dind sh -c '\
+                apk update && apk add --no-cache \
+                    alpine-sdk \
+                    coreutils \
+                    git \
+                    rsync \
+                    wget && \
+                git clone https://github.com/linuxkit/linuxkit --depth 1 --branch v0.8 && \
+                cd /linuxkit && make && \
+                docker -H unix:///tmp/host-docker/docker.sock build ${DOCKER_BUILD_ARGS} -t uosbuilder:${GIT_COMMIT} -f /uos/Dockerfile .' && \
+            docker rm -f builder-docker && \
+            rm -fr /tmp/builder; \
+        fi" \
+        ../../${LOG_FILE}
+    run "(4/10) Building UOS" \
+        "docker run -t --rm ${DOCKER_RUN_ARGS} -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/uos uosbuilder:${GIT_COMMIT} -c 'cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos.yml'" \
+        ../../${LOG_FILE}
+fi
 run "(5/10) Prepping initrd" \
-    "docker run -t --rm ${DOCKER_RUN_ARGS} -v $(pwd):/uos alpine:3.11 sh -c '\
+    "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v $(pwd):/uos alpine:3.11 sh -c '\
         apk update && apk add --no-cache \
             bash \
             cpio \

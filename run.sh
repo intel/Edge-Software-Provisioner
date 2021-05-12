@@ -50,22 +50,55 @@ logMsg "Welcome to the builder host run script"
 if [[ "${FORCE_RESTART}" == "true" ]]; then
     printDatedInfoMsg "Restarting containers..."
     logMsg "run.sh restarting containers"
-    docker-compose restart
+    if podman -v >/dev/null 2>&1; then
+        scripts/espctl.sh restart
+    else
+        docker-compose restart
+    fi
 else
     if [[ "${FORCE_RECREATE}" == "true" ]]; then
         printDatedInfoMsg "Stopping containers..."
         logMsg "run.sh force-recreating containers"
         sleep 1
-        docker-compose down
+        if podman -v >/dev/null 2>&1; then
+            scripts/espctl.sh down
+        else
+            docker-compose down
+        fi
+        umount data/usr/share/nginx/html/tftp >/dev/null 2>&1
+        umount data/usr/share/nginx/html/tftp >/dev/null 2>&1
+        umount data/srv/tftp >/dev/null 2>&1
+        umount data/srv/tftp >/dev/null 2>&1
+        umount data/usr/share/nginx/html/index.html >/dev/null 2>&1
+        umount data/usr/share/nginx/html/index.html >/dev/null 2>&1
+        umount template/nginx/index.html >/dev/null 2>&1
+        umount template/nginx/index.html >/dev/null 2>&1
     fi
 
     mkdir -p /var/cache/squid && chmod 777 /var/cache/squid
     printDatedInfoMsg "Starting dnsmasq container..."
     logMsg "run.sh bringing up containers"
-    docker-compose up -d dnsmasq
+    if podman -v >/dev/null 2>&1; then
+        scripts/espctl.sh up dnsmasq
+    else
+        docker-compose up -d dnsmasq
+    fi
     printDatedInfoMsg "Waiting a moment before starting the remaining containers..."
     sleep 3
-    docker-compose up -d
+    if podman -v >/dev/null 2>&1; then
+        scripts/espctl.sh up
+    else
+        docker-compose up -d
+    fi
+fi
+
+if podman -v >/dev/null 2>&1; then
+    printMsg ""
+    printMsg ""
+    printBanner "${C_RED}This system is using Podman to run ESP. Please use 'scripts/espctl.sh down' to stop ESP!"
+    printMsg ""
+    printMsg ""
+    sleep 3
 fi
 
 if [[ "${NO_TAIL_LOGS}" == "true" ]]; then
@@ -85,5 +118,9 @@ else
     sleep 1
     printMsg ""
 
-    docker-compose logs -f
+    if podman -v >/dev/null 2>&1; then
+        ./scripts/espctl.sh logs -f
+    else
+        docker-compose logs -f
+    fi
 fi
