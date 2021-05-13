@@ -1017,7 +1017,7 @@ startGitea() {
                 "${LOG_FILE}"
         else
             run "${message}" \
-                "docker-compose up -d mirror -d && sleep 5" \
+                "docker-compose up -d mirror && sleep 5" \
                 "${LOG_FILE}"
         fi
     fi

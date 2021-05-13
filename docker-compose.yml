@@ -18,14 +18,14 @@ services:
       - O=edgebuilder
       - OU=edgebuilder
       - C=US
-      - http_proxy=${http_proxy}
-      - https_proxy=${https_proxy}
-      - ftp_proxy=${ftp_proxy}
-      - no_proxy=${no_proxy}
-      - HTTP_PROXY=${HTTP_PROXY}
-      - HTTPS_PROXY=${HTTPS_PROXY}
-      - FTP_PROXY=${FTP_PROXY}
-      - NO_PROXY=${NO_PROXY}
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
+      - ftp_proxy=${ftp_proxy:-}
+      - no_proxy=${no_proxy:-}
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - FTP_PROXY=${FTP_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-}
     ports:
       - 80:80
       - 443:443
@@ -42,14 +42,14 @@ services:
     image: builder-dnsmasq
     restart: always
     environment:
-      - http_proxy=${http_proxy}
-      - https_proxy=${https_proxy}
-      - ftp_proxy=${ftp_proxy}
-      - no_proxy=${no_proxy}
-      - HTTP_PROXY=${HTTP_PROXY}
-      - HTTPS_PROXY=${HTTPS_PROXY}
-      - FTP_PROXY=${FTP_PROXY}
-      - NO_PROXY=${NO_PROXY}
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
+      - ftp_proxy=${ftp_proxy:-}
+      - no_proxy=${no_proxy:-}
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - FTP_PROXY=${FTP_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-}
     volumes:
       - ./template/pxe_bg.png:/srv/tftp/pxe_bg.png
       - ./template/pxe_bg.png:/srv/tftp/legacy/pxe_bg.png
@@ -72,14 +72,14 @@ services:
     image: registry:2
     restart: always
     environment:
-      - http_proxy=${http_proxy}
-      - https_proxy=${https_proxy}
-      - ftp_proxy=${ftp_proxy}
-      - no_proxy=${no_proxy}
-      - HTTP_PROXY=${HTTP_PROXY}
-      - HTTPS_PROXY=${HTTPS_PROXY}
-      - FTP_PROXY=${FTP_PROXY}
-      - NO_PROXY=${NO_PROXY}
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
+      - ftp_proxy=${ftp_proxy:-}
+      - no_proxy=${no_proxy:-}
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - FTP_PROXY=${FTP_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-}
     ports:
       - 5557:5000
     volumes:
@@ -95,14 +95,14 @@ services:
       - O=squid
       - OU=squid
       - C=US
-      - http_proxy=${http_proxy}
-      - https_proxy=${https_proxy}
-      - ftp_proxy=${ftp_proxy}
-      - no_proxy=${no_proxy}
-      - HTTP_PROXY=${HTTP_PROXY}
-      - HTTPS_PROXY=${HTTPS_PROXY}
-      - FTP_PROXY=${FTP_PROXY}
-      - NO_PROXY=${NO_PROXY}
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
+      - ftp_proxy=${ftp_proxy:-}
+      - no_proxy=${no_proxy:-}
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - FTP_PROXY=${FTP_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-}
     ports:
       - 3128:3128
       - 4128:4128
@@ -120,14 +120,14 @@ services:
       - DEFAULT_PRIVATE=public
       - ENABLE_PUSH_CREATE_USER=true
       - ENABLE_PUSH_CREATE_ORG=true
-      - http_proxy=${http_proxy}
-      - https_proxy=${https_proxy}
-      - ftp_proxy=${ftp_proxy}
-      - no_proxy=${no_proxy}
-      - HTTP_PROXY=${HTTP_PROXY}
-      - HTTPS_PROXY=${HTTPS_PROXY}
-      - FTP_PROXY=${FTP_PROXY}
-      - NO_PROXY=${NO_PROXY}
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
+      - ftp_proxy=${ftp_proxy:-}
+      - no_proxy=${no_proxy:-}
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - FTP_PROXY=${FTP_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-}
     restart: always
     networks:
       - gitea
@@ -138,8 +138,6 @@ services:
     ports:
       - "3003:3000"
       - "222:22"
-    depends_on: 
-      - core
     logging:
       driver: "json-file"
       options:
