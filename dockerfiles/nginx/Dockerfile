@@ -8,6 +8,7 @@ RUN apk update && apk add --no-cache \
       openssl \
       ca-certificates \
       tini \
+      wget \
     && update-ca-certificates
 
 COPY init /usr/local/bin/
