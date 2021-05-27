@@ -12,16 +12,15 @@ else
   sed -i 's/INSTALL_LOCK[ \t]*= false/INSTALL_LOCK   = true/' /data/gitea/conf/app.ini && \
   sed -i 's/\[repository\]/\[repository\]\nDEFAULT_PRIVATE=public\nENABLE_PUSH_CREATE_USER=true\nENABLE_PUSH_CREATE_ORG=true/' /data/gitea/conf/app.ini && \
   sed -i 's/\[database\]/\[database\]\nLOG_SQL = false/' /data/gitea/conf/app.ini
-fi
-
-if (cat /data/gitea/conf/app.ini | grep INSTALL_LOCK | grep true 2>&1 > /dev/null ); then
-  echo "GitTea database already configured"
-else
-  sleep 5 && \
+  sleep 5
+  /usr/bin/entrypoint &
+  sleep 5
   while (! gitea admin create-user --admin --username mirror --password mirror --email mirror@localhost --must-change-password=false ); do 
     echo \"Waiting for Gitea Database\"; 
     sleep 5; 
   done
+  sleep 3
+  gitea manager shutdown
 fi
 
 exec /usr/bin/entrypoint

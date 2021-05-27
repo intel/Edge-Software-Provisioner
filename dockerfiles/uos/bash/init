@@ -36,5 +36,5 @@ if [[ $kernel_params = *"token="* ]]; then
 	param_token="${tmp%% *}"
 fi
 
-wget --header "Authorization: token ${param_token}" -O - ${param_bootstrap} 2> ${CONSOLE_OUTPUT} | bash -s - $param_httpserver
+wget --no-check-certificate --header "Authorization: token ${param_token}" -O - ${param_bootstrap} 2> ${CONSOLE_OUTPUT} | bash -s - $param_httpserver
 
