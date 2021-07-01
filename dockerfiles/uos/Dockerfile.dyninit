@@ -1,7 +1,7 @@
 # Copyright (C) 2020 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM docker:19.03.8-dind
+FROM docker:19.03.15-dind
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
 RUN apk update && apk add --no-cache \
@@ -10,8 +10,11 @@ RUN apk update && apk add --no-cache \
     coreutils \
     cpio \
     cryptsetup \
+    dmidecode \
     e2fsprogs \
     e2fsprogs-extra \
+    efibootmgr \
+    efitools \
     eudev \
     expect \
     file \
@@ -24,31 +27,21 @@ RUN apk update && apk add --no-cache \
     lshw \
     lvm2 \
     netcat-openbsd \
+    ntfs-3g \
     openssh-client \
     openssl \
     parted \
     pciutils \
-    py2-pip \
+    py3-pip \
     rng-tools \
     rsync \
+    sbsigntool \
     supervisor \
     syslinux \
     util-linux \
     wget \
+    wireless-tools \
     xz
-
-RUN cp /etc/apk/repositories /etc/apk/repositories.bak && \
-    sed -i -e 's/v[[:digit:]]\+\.[[:digit:]]\+/edge/g' /etc/apk/repositories && \
-    echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
-
-RUN apk update && apk add --no-cache \
-    efibootmgr \
-    efitools \
-    sbsigntool
-
-RUN mv /etc/apk/repositories.bak /etc/apk/repositories && \
-    echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && \
-    apk update
 
 RUN echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
 

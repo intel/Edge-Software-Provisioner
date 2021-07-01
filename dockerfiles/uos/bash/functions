@@ -38,7 +38,7 @@ run()
       IP=$(ip route get 8.8.8.8 | awk 'NR==1 {print $NF}')
       echo "$(date) FAILED: Running $runThis..." >> $log
       echo -e "\e[1m[\e[31mFAILED: Running $runThis\e[39m]" 2>&1 | tee -a /dev/console
-      echo -e "\e[1mPress 'enter' to login to the console or SSH into $IP using username and password as 'uos' .  After logging in, type 'utilityos' and check the file $log." 2>&1 | tee -a /dev/console
+      echo -e "\e[1mPress 'enter' to login to the console or SSH into $IP using username 'root' and password as 'uos'.  After logging in, check the file $log." 2>&1 | tee -a /dev/console
       exit 1
     else
       echo "$(date) SUCCESS: Running $runThis..." >> $log
