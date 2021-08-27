@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2019 Intel Corporation
+# Copyright (C) 2021 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
 # This file contains functions that are intended to trigger the downloading
