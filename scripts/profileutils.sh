@@ -1054,6 +1054,7 @@ genProfileUsbBoot() {
     kernelArgs=$(echo "${kernelArgs}" | sed "s/${profileNamePlaceholder}/${name}/g")
 
     mkdir -p ${usb_path}/${name}
+    mkdir -p ${tmp_path}
     echo ${kernelArgs} > ${usb_path}/${name}/uos-cmdline
     cp ${ymlPath} ${TFTP_IMAGES}/uos/usb/uos.yml
 
