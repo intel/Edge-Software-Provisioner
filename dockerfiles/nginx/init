@@ -51,12 +51,32 @@ download_cerbot() {
 	fi
 }
 
+watch_certs() {
+	inotifywait -e modify -m /etc/ssl/cert/ |
+	while read -r directory events filename; do
+		if [ "${filename}" == "EB_web.crt" ]; then
+			echo "Certificate updated, reloading Nginx"
+			nginx -s reload
+		fi
+	done
+}
+
+wait_for_conf() {
+	while (! ls /usr/share/nginx/template/default.conf > /dev/null 2>&1 ); do 
+		echo "Waiting for default.conf file to be created"; 
+		sleep 5; 
+	done
+	cp /usr/share/nginx/template/default.conf /etc/nginx/conf.d/default.conf
+}
+
 run() {
 	prepare_folders
 	create_cert
 	download_cerbot
+	wait_for_conf
 	echo "Starting Nginx..."
-	exec nginx-debug -g "daemon off;"
+	nginx-debug -g "daemon off;" &
+	watch_certs
 }
 
 run

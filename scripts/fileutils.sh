@@ -12,11 +12,13 @@
 
 # These are helper variables to quickly identify where things will be stored
 # These variables are used globally throughout this application's scripts
-WEB_ROOT="$(pwd)/data/usr/share/nginx/html"
-WEB_FILES="${WEB_ROOT}/files"
-WEB_PROFILE="${WEB_ROOT}/profile"
-TFTP_ROOT="$(pwd)/data/srv/tftp"
-TFTP_IMAGES="${TFTP_ROOT}/images"
+export WEB_ROOT="$(pwd)/data/usr/share/nginx/html"
+export WEB_FILES="${WEB_ROOT}/files"
+export WEB_PROFILE="${WEB_ROOT}/profile"
+export TFTP_ROOT="$(pwd)/data/srv/tftp"
+export TFTP_IMAGES="${TFTP_ROOT}/images"
+export TEMPLATE_FILES="$(pwd)/template"
+export EMBEDDED_FILES="$(pwd)/data/embedded"
 
 parseConfig() {
     local builderConfig="conf/config.yml"
@@ -387,7 +389,9 @@ mirrorGitRepo() {
             rm -fr .git/ && \
             cd ../ && \
             git clone http://mirror:mirror@${builder_config_host_ip}:3003/mirror/${profile_name}___${repo_name}.git && \
-            rsync -rtc --stats --progress --exclude=.git/ ${repo_name}/ ${profile_name}___${repo_name}/ && \
+            docker run -t --rm -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
+            cd work/ && \
+            rsync -rtc --stats --progress --exclude=.git/ ${repo_name}/ ${profile_name}___${repo_name}/' && \
             cd ${profile_name}___${repo_name}/ && \
             git add . && \
             git commit -m 'mirror'; \
@@ -418,9 +422,11 @@ processBuild() {
     local cmd=$3
     local profile_name=$4
     # local container_name=$( echo "builder_$profile_name" | sed -r 's#[:/]#-#g')
-    local container_name="builder"
+    local container_name="build"
 
     mkdir -p ${WEB_FILES}/${profile_name}/build
+    mkdir -p ${EMBEDDED_FILES}/${profile_name}
+
     if [ -d ${WEB_PROFILE}/${profile_name}_base/build ]; then
         local BASE_BIND="-v ${WEB_PROFILE}/${profile_name}_base/build:/opt/base"
     else
@@ -435,13 +441,50 @@ processBuild() {
 
     local message="  Running Build process, this could take a very long time.  In another terminal run 'docker logs ${container_name} -f' to watch progress."
     run "${message}" \
-        "docker rm -f builder-docker > /dev/null 2>&1; \
-        docker run -d --privileged --name builder-docker ${DOCKER_RUN_ARGS} -v $(pwd)/data/tmp/builder:/var/run -v $(pwd)/data/lib/docker:/var/lib/docker docker:19.03.8-dind && \
+        "docker rm -f build-docker > /dev/null 2>&1; \
+        docker run -d --privileged --name build-docker ${DOCKER_RUN_ARGS} -v $(pwd)/data/tmp/build:/var/run -v $(pwd)/data/lib/docker:/var/lib/docker docker:19.03.12-dind && \
+        sleep 7 && docker restart build-docker && \
         echo 'Waiting for Docker'; \
-        while (! docker -H unix:///$(pwd)/data/tmp/builder/docker.sock ps > /dev/null 2>&1); do echo -n '.'; sleep 0.5; done; echo 'ready' && \
-        docker run --rm --privileged --name ${container_name} ${ENTRYPOINT_CLI} -v $(pwd)/data/tmp/builder:/var/run -v $(pwd)/data/persist:/opt/persist ${BASE_BIND} -v ${WEB_PROFILE}/${profile_name}/build:/opt/build -v ${WEB_FILES}/${profile_name}/build:/opt/output:shared ${container} ${cmd}; \
-        echo 'Finished with build, Cleaning up builder docker container...'; \
-        docker rm -f builder-docker > /dev/null 2>&1 || true; \
+        while (! docker -H unix:///$(pwd)/data/tmp/build/docker.sock ps ); do echo -n '.'; sleep 0.5; done; echo 'ready' && \
+        docker run --rm --privileged --name ${container_name} ${ENTRYPOINT_CLI} \
+            -v /run/docker.sock:/opt/run/sys.sock \
+            -v $(pwd)/data/tmp/build:/var/run \
+            -v $(pwd)/data/persist:/opt/persist \
+            ${BASE_BIND} \
+            -v ${WEB_PROFILE}/${profile_name}/build:/opt/build \
+            -v ${WEB_FILES}/${profile_name}/build:/opt/output:shared \
+            -v ${EMBEDDED_FILES}/${profile_name}:/opt/embedded \
+            ${container} ${cmd}; \
+        echo 'Finished with build, Cleaning up build docker container...'; \
+        docker rm -f build-docker > /dev/null 2>&1 || true; \
         docker rm -f ${container_name} > /dev/null 2>&1|| true" \
+        ${LOG_FILE}
+}
+
+processEmbedded() {
+    local profile_name=$1
+    local uos_profile_path=${TFTP_IMAGES}/uos/${profile_name}
+
+    mkdir -p ${uos_profile_path}
+    mkdir -p ${WEB_PROFILE}/${profile_name}
+    mkdir -p ${EMBEDDED_FILES}/${profile_name}
+    cp ${TFTP_IMAGES}/uos/initrd ${uos_profile_path}/
+
+    local message="  Embedding files into uOS.  In another terminal run 'docker logs ${profile_name} -f' to watch progress."
+    run "${message}" \
+        "docker run --rm --privileged --name esp_embedding \
+            -v ${uos_profile_path}:/opt/images \
+            -v ${WEB_PROFILE}/${profile_name}/embedded:/opt/profile_embedded \
+            -v ${EMBEDDED_FILES}/${profile_name}:/opt/embedded \
+            alpine:3.12 sh -c 'apk update && \
+                apk add rsync gzip && \
+                mkdir -p prep/ && \
+                cd prep/ && \
+                gunzip -c < /opt/images/initrd | cpio -i -d 2> /dev/null || true && \
+                rsync -rtc /opt/profile_embedded/ ./ && \
+                rsync -rtc /opt/embedded/ ./ && \
+                find . | cpio -H newc -o | gzip > /opt/images/initrd' \
+        echo 'Finished with embedding files into uOS, Cleaning up build docker container...'; \
+        docker rm -f esp_embedding > /dev/null 2>&1 || true" \
         ${LOG_FILE}
 }

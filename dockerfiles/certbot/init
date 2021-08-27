@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Copyright (C) 2019 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+source "scripts/textutils.sh"
+source "scripts/fileutils.sh"
+# source "scripts/bulkfileutils.sh"
+# source "scripts/profileutils.sh"
+# source "scripts/pxemenuutils.sh"
+source "scripts/templateutils.sh"
+
+parseConfig
+
+if [ "${builder_config_letsencrypt_enabled}" == "true" ]; then
+  if [ "${builder_config_letsencrypt_agree_to}" == "true" ]; then
+    if [ "${builder_config_letsencrypt_no_eff_email}" == "true" ]; then
+      NO_EFF_EMAIL="--no-eff-email"
+    fi
+    if [ "${builder_config_letsencrypt_staging}" == "true" ]; then
+      STAGING="--staging "
+    fi
+    # validateInput fqdn "${builder_config_host_ip}" "${builder_config_host_ip} is not a valid FQDN - Fully Qualified Domain Name."
+    validateInput email "${builder_config_letsencrypt_email}" "${builder_config_letsencrypt_email} is not a valid email address."
+
+    if [ ! -f "/etc/letsencrypt/live/${builder_config_host_ip}/fullchain.pem" ]; then
+      certbot certonly --webroot --webroot-path=/var/www/certbot --rsa-key-size 4096 --email ${builder_config_letsencrypt_email} --agree-tos ${NO_EFF_EMAIL} ${STAGING} -d ${builder_config_host_ip} && \
+      cp /etc/letsencrypt/live/${builder_config_host_ip}/privkey.pem /etc/ssl/private/EB_web.key && \
+      cp /etc/letsencrypt/live/${builder_config_host_ip}/fullchain.pem /etc/ssl/cert/EB_web.crt       
+    fi
+    inotifywait -e move -m /etc/letsencrypt/live/${builder_config_host_ip}/ |
+    while read -r directory events filename; do
+      if [ "${filename}" == "privkey.pem" ]; then
+        echo "/etc/letsencrypt/live/${builder_config_host_ip}/privkey.pem has changed."
+        cp /etc/letsencrypt/live/${builder_config_host_ip}/privkey.pem /etc/ssl/private/EB_web.key && \
+        cp /etc/letsencrypt/live/${builder_config_host_ip}/fullchain.pem /etc/ssl/cert/EB_web.crt      
+      fi
+    done
+  else
+    printMsg "Service will not run as the user did not agree to the service agreement in conf/config.yml"
+    exit 0
+  fi
+else
+  printMsg "Let's Encrypt is disabled in conf/config.yml and the service will not run"
+  exit 0
+fi

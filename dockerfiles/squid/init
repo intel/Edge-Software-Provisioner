@@ -11,10 +11,10 @@ SQUID=$(/usr/bin/which squid)
 prepare_folders() {
 	echo "Preparing folders..."
 	mkdir -p /etc/squid-cert/
-	mkdir -p /var/cache/squid/
+	mkdir -p /var/spool/squid/
 	mkdir -p /var/log/squid/
 	"$CHOWN" -R squid:squid /etc/squid-cert/
-	"$CHOWN" -R squid:squid /var/cache/squid/
+	"$CHOWN" -R squid:squid /var/spool/squid/
 	"$CHOWN" -R squid:squid /var/log/squid/
 }
 
@@ -51,7 +51,16 @@ clear_certs_db() {
 	"$CHOWN" -R squid.squid /var/lib/ssl_db
 }
 
+wait_for_conf() {
+	while (! ls /etc/squid/template/squid.conf > /dev/null 2>&1 ); do 
+		echo "Waiting for squid.conf file to be created"; 
+		sleep 5; 
+	done
+	cp /etc/squid/template/squid.conf /etc/squid/squid.conf
+}
+
 run() {
+	wait_for_conf
 	echo "Starting squid..."
 	prepare_folders
 	create_cert

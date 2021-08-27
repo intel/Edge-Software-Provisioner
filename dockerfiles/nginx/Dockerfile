@@ -5,8 +5,9 @@ FROM nginx:1.19.6-alpine
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
 RUN apk update && apk add --no-cache \
-      openssl \
       ca-certificates \
+      inotify-tools \
+      openssl \
       tini \
       wget \
     && update-ca-certificates

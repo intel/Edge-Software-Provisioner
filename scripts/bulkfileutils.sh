@@ -24,11 +24,13 @@ downloadBaseOSFiles() {
             local url=${files_config_base_os_files__url[j]}
             local filename=${files_config_base_os_files__filename[j]}
 
-            downloadBaseOSFile \
-                "  Downloading: ${filename}" \
-                "${url}" \
-                "${profileName}" \
-                "${filename}"
+            if [ "${url}" != "None" ]; then
+                downloadBaseOSFile \
+                    "  Downloading: ${filename}" \
+                    "${url}" \
+                    "${profileName}" \
+                    "${filename}"
+            fi
         done
     fi
 }
@@ -246,7 +248,7 @@ processBuilds() {
                 local container=${files_config_build__container[j]}
                 validateInput container "${container}" "'container' in files.yml of profile ${profileName} is not valid container name: ${container}"
             fi
-            if [ -z "${files_config_build__entrypoint[j]+x}" ]; then
+            if [ "${files_config_build__entrypoint[j]}" == '""' ]; then
                 local entrypoint=""
             else
                 local entrypoint="--entrypoint=\"${files_config_build__entrypoint[j]}\""
@@ -282,5 +284,17 @@ processBuilds() {
                 "${cmd}" \
                 "${profileName}"
         done
+    fi
+}
+
+processEmbeddeds() {
+    local profileName=$1
+
+    if [ "$(ls -A ${EMBEDDED_FILES}/${profileName} 2> /dev/null)" ] || [ "$(ls -A ${WEB_PROFILE}/${profileName}/embedded 2> /dev/null)" ]; then
+        processEmbedded \
+            "${profileName}"
+    else
+        printDatedMsg "  ${T_INFO_ICON} No files to embed into uOS"
+        logMsg "No files to embed into uOS"
     fi
 }

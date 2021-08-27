@@ -10,6 +10,11 @@ if [[ $(id -u) -ne 0 ]]; then
     exit 1
 fi
 
+# If running from within container change to builder directory
+if [ "${BUILDER_PATH:=}" != "" ]; then
+    cd ${BUILDER_PATH}
+fi
+
 source "scripts/textutils.sh"
 source "scripts/fileutils.sh"
 source "scripts/bulkfileutils.sh"
@@ -22,8 +27,10 @@ printHelp() {
     printMsg " You can specify one the following options:"
     printMsg "  ${T_BOLD}-d${T_RESET}, --disk-size       A numeric valude is valid measured in gigabytes.  Defaults to '10'."
     printMsg "  ${T_BOLD}-f${T_RESET}, --disk-format     Valid input value is [ qcow2 | vdi | vmdk | vpc | vhdx | parallels ].  Defaults to 'qcow2'."
-    printMsg "  ${T_BOLD}-m${T_RESET}, --memory-size     A numeric valude is valid measured in megabytes.  Defaults to '2048'."
-    printMsg "  ${T_BOLD}-o${T_RESET}, --output          Valid input value is [ file | container ].  Defaults to 'file'"
+    printMsg "  ${T_BOLD}-m${T_RESET}, --memory-size     A numeric value is valid measured in megabytes.  Defaults to '2048'."
+    printMsg "  ${T_BOLD}-b${T_RESET}, --bios            Valid input value is [ efi ] or leave empty.  Defaults to empty value."
+    printMsg "  ${T_BOLD}-o${T_RESET}, --output          Valid input value is [ file | container ].  Defaults to 'file'."
+    printMsg "  ${T_BOLD}-p${T_RESET}, --profile         Enter the profile name to build."
     printMsg "  ${T_BOLD}-h${T_RESET}, --help            Show this help dialog"
     printMsg ""
     printMsg " Usage: $0"
@@ -31,24 +38,28 @@ printHelp() {
     exit 0
 }
 
-DISK_SIZE="10"
-DISK_FORMAT="qcow2"
-MEMORY="2048"
-OUTPUT="file"
-VERBOSE="false"
-# The following var is not used in vpxe.sh but for build.sh.  It will be added for future use.
-SINGLE_PROFILE=""
+export DISK_SIZE="10"
+export DISK_FORMAT="qcow2"
+export MEMORY="2048"
+export OUTPUT="file"
+export VERBOSE="false"
+export BIOS=""
+export SINGLE_PROFILE=""
 while (( "$#" )); do
     case "$1" in
-        "-d" | "--disk-size"           )    DISK_SIZE=$2
+        "-d" | "--disk-size"           )    export DISK_SIZE=$2
                                             shift 2;;
-        "-f" | "--disk-format"         )    DISK_FORMAT=$2
+        "-f" | "--disk-format"         )    export DISK_FORMAT=$2
                                             shift 2;;
-        "-m" | "--memory-size"         )    MEMORY=$2
+        "-m" | "--memory-size"         )    export MEMORY=$2
                                             shift 2;;
-        "-o" | "--output"              )    OUTPUT=$2
+        "-b" | "--bios"                )    export BIOS=$2
                                             shift 2;;
-        "-v" | "--verbose"             )    VERBOSE="true"
+        "-o" | "--output"              )    export OUTPUT=$2
+                                            shift 2;;
+        "-p" | "--profile"             )    export SINGLE_PROFILE=$2
+                                            shift 2;;
+        "-v" | "--verbose"             )    export VERBOSE="true"
                                             shift 1;;
         "-h" | "--help"                )    printHelp;;
         "--"                           )    # end argument parsing
@@ -84,28 +95,25 @@ else
 fi
 
 printMsg "\n-------------------------"
-printMsg " ${T_BOLD}${C_BLUE}Welcome Virtual PXE${T_RESET}"
+printMsg " ${T_BOLD}${C_BLUE}Welcome to Virtual PXE${T_RESET}"
 printMsg "-------------------------"
 logMsg "Welcome to Virtual PXE"
 parseConfig
 verifyNetworkConfig
-if [ "${OUTPUT}" = "container" ]; then
-    run "Building builder-qemu" \
-        "docker build -q --rm ${DOCKER_BUILD_ARGS} -t builder-qemu dockerfiles/qemu" \
-        ${LOG_FILE}
-fi
 printMsg ""
 printMsg ""
 
-# Begin the process of generating a temporary
-# pxelinux.cfg/default file
-# printBanner "\nGenerating Virtual ${C_GREEN}PXE Menu..."
-logMsg "Generating Virtual PXE Menu"
-profilesActions genProfileVirtualPxeMenu
-echo " q) Quit"
-echo ""
-read -p 'Select the Profile Number: ' selected_profile
-if [ ${selected_profile} = "q" ]; then exit; fi
-validateInput numeric "${selected_profile}" "Input value is not a valid numeric value: ${selected_profile}"
+if [ -z "${SINGLE_PROFILE}" ]; then
+    # Begin the process of generating Virtual PXE Menu
+    logMsg "Generating Virtual PXE Menu"
+    profilesActions genProfileVirtualPxeMenu
+    echo " q) Quit"
+    echo ""
+    read -p 'Select the Profile Number: ' selected_profile
+    if [ ${selected_profile} = "q" ]; then exit; fi
+    validateInput numeric "${selected_profile}" "Input value is not a valid numeric value: ${selected_profile}"
+else
+    selected_profile=$(profilesActions getProfileNumber)
+fi
 
 bootProfile genProfileVirtualPxeBoot ${selected_profile}

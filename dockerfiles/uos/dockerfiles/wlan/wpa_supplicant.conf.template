@@ -1,0 +1,10 @@
+country=@@COUNTRY@@
+update_config=1
+ctrl_interface=/run/wpa_supplicant
+
+network={
+ scan_ssid=1
+ ssid="@@SSID@@"
+ key_mgmt=WPA-PSK
+ psk="@@PSK@@"
+}
