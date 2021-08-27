@@ -20,7 +20,7 @@ docker run -d \
     -e NETWORK_DEVICE=e1000 \
     -e VNC=tcp \
     -p 5900:5900
-    rrp/kvm
+    builder-qemu
 ```
 
 
@@ -41,7 +41,7 @@ docker run \
     -p 2222:22 \
     -p 8080:80 \
     -p 5900:5900 \
-    rrp/kvm
+    builder-qemu
 ```
 
 
@@ -60,7 +60,7 @@ docker run \
     -p 2222:22 \
     -p 8080:80 \
     -p 5900:5900 \
-    rrp/kvm
+    builder-qemu
 ```
 
 
@@ -79,7 +79,7 @@ docker run \
     -p 2222:22 \
     -p 8080:80 \
     -p 5900:5900 \
-    rrp/kvm
+    builder-qemu
 ```
 
 
@@ -138,7 +138,7 @@ docker run \
 > Enter a value in megabytes for the virtual machine RAM. Default value is 2048.
 
 `-e SMP 1,sockets=1,cores=1,threads=1`
-> The is number of cpus, threads etc. Default value is 1,sockets=1,cores=1,threads=1.  See "-smp" in the QEMU manual: https://qemu.weilnetz.de/doc/qemu-doc.html
+> The is number of cpus, threads etc. Default value is 1,sockets=1,cores=1,threads=1.  See "-smp" in the QEMU manual: https://qemu.weilnetz.de/doc/
 
 `-e CPU qemu64`
 > This is the cpu type to use.  Default value is qemu64 for the fastest processing.  Below is a list of alternative CPUs to use.
@@ -187,7 +187,7 @@ x86              max  Enables all features supported by the accelerator in the c
 > This is the mouse type to use.  Default value is '-usb -device usb-tablet' which works best for windows. For android value of 'none' works best.
 
 `-e DISK_DEVICE ide`
-> Options are ide, scsi, virtio, "" or a custom device string if you know what you are doing.  Default value is ide. See "-device" in the QEMU manual: https://qemu.weilnetz.de/doc/qemu-doc.html
+> Options are ide, scsi, virtio, "" or a custom device string if you know what you are doing.  Default value is ide. See "-device" in the QEMU manual: https://qemu.weilnetz.de/doc/
 
 `-e IMAGE /data/volumes/vm.img`
 > Path to disk image.  Can be a docker bind mount or and image within the container. Default value is /data/volumes/vm.img.
@@ -199,10 +199,10 @@ x86              max  Enables all features supported by the accelerator in the c
 > Disk partition size in gigabytes.  Default value is 10G.
 
 `-e IMAGE_CACHE none`
-> Disk cache; options are none, writeback, unsafe, directsync and writethrough.   Default value is none (none is equal to writeback and direct). See "cache=cache" in the QEMU manual: https://qemu.weilnetz.de/doc/qemu-doc.html
+> Disk cache; options are none, writeback, unsafe, directsync and writethrough.   Default value is none (none is equal to writeback and direct). See "cache=cache" in the QEMU manual: https://qemu.weilnetz.de/doc/
 
 `-e IMAGE_DISCARD unmap`
-> Options are ignore and unmap.  See "discard=discard" in the QEMU manual: https://qemu.weilnetz.de/doc/qemu-doc.html
+> Options are ignore and unmap.  See "discard=discard" in the QEMU manual: https://qemu.weilnetz.de/doc/
 
 `-e IMAGE_CREATE 0`
 > Options 0 or 1.  1 will create the disk image and used when installing OS for the first time. Default value is 0.
@@ -214,7 +214,7 @@ x86              max  Enables all features supported by the accelerator in the c
 > Options 0 or 1. Will download ISO from environment variable ISO. Default value is 0.
 
 `-e NETWORK user`
-> Network device type; options are user, bridge, tap and macvtap.  Default value is user.  See https://wiki.qemu.org/Documentation/Networking and https://qemu.weilnetz.de/doc/qemu-doc.html for types.
+> Network device type; options are user, bridge, tap and macvtap.  Default value is user.  See https://wiki.qemu.org/Documentation/Networking and https://qemu.weilnetz.de/doc/ for types.
 
 `-e NETWORK_BRIDGE br0`
 > This is relevant when NETWORK type is bridge.  This is host bridge device.  Default value is br0.  Do not change unless you know what you are doing.
@@ -248,18 +248,24 @@ name "ne2k_pci", bus PCI
 name "pcnet", bus PCI
 name "rocker", bus PCI, desc "Rocker Switch"
 name "rtl8139", bus PCI
+name "tulip"
 name "usb-bt-dongle", bus usb-bus
 name "usb-net", bus usb-bus
 name "virtio-net-device", bus virtio-bus
 name "virtio-net-pci", bus PCI, alias "virtio-net"
+name "virtio-net-pci-non-transitional", bus PCI, alias "virtio-net"
+name "virtio-net-pci-transitional", bus PCI, alias "virtio-net"
 name "vmxnet3", bus PCI, desc "VMWare Paravirtualized Ethernet v3"
 ```
 
 `-e VIDEO none`
 > Choose video type; options are spice, vnc, none and "". Default value is none.
 
+`-e GPU none`
+> Choose GPU type; the only options are gvt, and "". Default value is none.
+
 `-e VNC none`
-> Enable VNC console access; options are tcp, none, reverse, socket and "". Default value is none. See https://qemu.weilnetz.de/doc/qemu-doc.html
+> Enable VNC console access; options are tcp, none, reverse, socket and "". Default value is none. See https://qemu.weilnetz.de/doc/
 
 `-e VNC_IP ""`
 > When environment variable VNC is tcp this value can be set of left blank to represent 0.0.0.0. Default value is "".

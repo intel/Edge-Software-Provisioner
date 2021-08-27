@@ -26,13 +26,17 @@ To quickly get started follow the [Quick Installation Guide](#quick-installation
 
 1. [Building Target Devices](#building-target-devices)
 
+1. [Adding and Removing Profiles](#adding-removing-profiles)
+
 1. [Profile Management](#profile-management)
 
 1. [Virtual PXE](#virtual-pxe)
 
+1. [Bootable USB](#bootable-usb)
+
 ## What is it?
 
-The Edge Software Provisioner (ESP) enables ODMs, System Integrators and Developers to automate the installation of a complete operating system and software stack (defined by a Profile) on bare-metal or virtual machines using a "Just-in-Time" provisioning process. The software stack can include software components, middleware, firmware, and applications.  Automating this process increases velocity by focusing resources on rapid development, validation of use cases and scalable deployment.  ESP simplifies customer adoption through confidence gained validating Profiles.  Profiles are cloned and distributed through GitHub containing the human readable prescriptive literature to deploy the complete operating system and software stack.  In summary, this a scalable, simple bare metal provisioning process including virtual machine provisioning.
+The Edge Software Provisioner (ESP) enables ODMs, System Integrators and Developers to automate the installation of a complete operating system and software stack (defined by a Profile) on bare-metal or virtual machines using a "Just-in-Time" provisiong process. The software stack can include software components, middleware, firmware, and applications.  Automating this process increases velocity by focusing resources on rapid development, validation of use cases and scalable deployment.  ESP simplifies customer adoption through confidence gained validating Profiles.  Profiles are cloned and distributed through GitHub containing the human readable prescriptive literature to deploy the complete operating system and software stack.  In summary, this a scalable, simple bare metal provisioning process including virtual machine provisioning.
 
 ## Why do I want it?
 
@@ -66,7 +70,7 @@ The main executable to setup a device as a Edge Software Provisioner is `build.s
 
 The following is required:
 
-* **Profile** - The git URL for at least one profile is required. You will be asked to paste the URL into the configuration file in the following instructions. [Clear Linux](https://github.com/intel/rni-profile-base-clearlinux), [Ubuntu](https://github.com/intel/rni-profile-base-ubuntu) and [RancherOS](https://github.com/intel/rni-profile-base-rancheros) are provided as example profiles.
+* **Profile** - The git URL for at least one profile is required. You will be asked to paste the URL into the configuration file in the following instructions. [Clear Linux](https://github.com/intel/rni-profile-base-clearlinux), [Ubuntu](https://github.com/intel/rni-profile-base-ubuntu) and [RancherOS](https://github.com/intel/rni-profile-base-rancheros) are provided as example profiles.  **See [Adding and Removing Profiles](#adding-removing-profiles) to update the profile list**
 
 * **Edge Software Provisioner** - Minimum Recommended Hardware or VM with 2 CPUs, 20GB HD and 2GB of RAM, running any Linux Distro (headless recommended) that supports Docker
   * `docker` 18.09.3 or greater
@@ -94,6 +98,8 @@ Target Devices will be connected on the same LAN as the Edge Software Provisione
 ## Quick Installation Guide
 
   NOTE: Please read [Network Setup](#network-setup) above before proceeding.  If using Ubuntu, do not use Snapd Docker, install Docker using aptitude.  Dnsmasq must not been running on the system from some other service.  Please confirm with `ps -auxww | grep dnsmasq`.
+
+  This guide will help build and run the Edge Software Provisioner docker images.  Depending on the compute power, it will take roughly 5 to 10 minutes to build the images.  To avoid building images every time you install, it suggested to build the images and then publish the images to a container registy.  Following this guide will give you some example steps and tooling to help push the images up to a registry.
 
   1. ALL the following commands must run as ROOT.  Type `sudo su -` and the your password before proceeding.  (DO NOT prepend sudo to every command.  `sudo su -` means load root environment versus sudo prepended uses your user's environment to the run commands.)
   ```bash
@@ -128,6 +134,30 @@ Target Devices will be connected on the same LAN as the Edge Software Provisione
   ![PXE Menu](./images/pxe_menu.png "PXE Menu")
 
   7. The default login username is `sys-admin` and the default password is `P@ssw0rd!`. This password is defined in the `conf/config.yml` as a kernel argument in the profiles.  See the individual profiles for further instructions.
+
+  **Stop rebuilding ESP for each installation! To improve installation efficiency for the next time continue on**
+
+  8. Let's re-tag docker images with your prefix to upload to your Docker Hub account.  The following example will re-tag images to look like `myDockerUser/builder-core:latest`.
+  ```bash
+  ./build.sh --tag myDockerHubUser
+  ```
+
+  9. Now let's push these images to your registry.  Make sure to run `docker login` first.
+  ```bash
+  ./build.sh --push myDockerHubUser
+  ```
+
+  10. Copy the output/docker-compose.yml file to your device or virtual machine you want to run Edge Sofware Provisioner.  On the target device simply run the following.
+  ```bash
+  docker-compose up -d
+  ```
+
+  To simplify further, you can use the example `examples/deply.sh` script to deploy Edge Software Provisioner in a one line command like the following example command (NOTE: you must move deploy.sh and the docker-compose.yml into your github repo for the following to work):
+  ```bash
+  wget -O- https://github.com/myuser/esp/raw/branch/master/deploy.sh | bash -s -
+  ```
+
+  **See [Adding and Removing Profiles](#adding-removing-profiles) to update the profile list**
 
 ## Installing ESP
 
@@ -227,6 +257,29 @@ Run `./run.sh` as root. This will start the Edge Software Provisioner services. 
 
 2. After installation, if the profile is in "release" mode "prod" it will shutdown.  If the profile is in "release" mode "dev" the device will reboot.  This is a kernel parameter set in the config.yml in a profile "release=prod" or "release=dev". Manually select the local disk boot option in the PXE menu when it comes up. If the terminal comes up without an error message and notification to check the error log, then it has built successfully!
 
+## Example Kernel Paramaters used at build time
+
+The following kernel parameters can be added to `conf/config.yml`
+
+* `bootstrap` - RESERVED, do not change
+* `ubuntuversion` - Use the Ubuntu release name. Defaults to 'cosmic' release
+* `debug` - [TRUE | FALSE] Enables a more verbose output
+* `httppath` - RESERVED, do not change
+* `kernparam` - Used to pass additional kernel parameters to the targeted system.  Example format: kernparam=splash:quiet#enable_gvt:1
+* `parttype` - RESERVED, do not change
+* `password` - Initial user password. Defaults to 'P@ssw0rd!'
+* `proxy` - Add proxy settings if behind proxy during installation.  Example: http://proxy.intel.com:800
+* `proxysocks` - Add socks proxy settings if behind proxy during installation.  Example: http://proxy.intel.com:1080
+* `release` - [prod | dev] If set to prod the system will shutdown after it is provisioned.  Altnerativily it will reboot
+* `token` - GitHub token for private repositories, if this profile is in a private respository this token should have access to this repo
+* `username` - Initial user name. Defaults to 'sys-admin'
+* `wpassid` - uOS WPA SSID if no ethernet is found
+* `wpapsk` - uOS WPA Pre-Shared Key if no ethernet is found
+* `wifissid` - Target system WiFi SSID
+* `wifipsk` - Target system WiFi Pre-Shared Key
+
+**NOTE: See profile for specific Kernel Parameters**
+
 ## Post-deployment Information
 
 **Flags**
@@ -244,6 +297,10 @@ You can use `./run.sh -r` to restart the Edge Software Provisioner containers.
 Edge Software Provisioner (ESP) will automatically restart upon system reboot.  To stop ESP, from within the "esp" folder type `docker-compose down`
 
 For any other problems that you may encounter during deployment, please consult the [Known Limitations](#known-limitations) section.
+
+## Adding Removing Profiles
+
+You can add and remove profiles by editing the file `conf/config.yml` from with the Edge Software Provisioner directory.  After making changes to the `conf/config.yml` you will need to update the location cache.  You would type `./build.sh -S` or `./build.sh -S --profile NAME_OF_PROFILE` to rebuild the local cache.  Use the `./build.sh -h` to see list of switches available.
 
 ## Profile Management
 
@@ -310,10 +367,23 @@ You can pull general files, files from S3, or pull container images etc.  The fo
 
   ```yaml
   build:
-    - container: alpine:3.11
+    - container: alpine:3.12
       entrypoint: ""
       cmd: sh -c
       execute: start.sh
+  ```
+
+### Legacy ISO Booting
+
+  The "Build Process" will perform any scripted action, for example you could build a linux kernel and stage it on Edge Software Provisioner.
+
+  In your profile modify `conf/files.yml`. Add as section called `base_os_files:` see example below.  See options `conf/files.yml.sample` in any profile (not included in this repo).
+
+  ```yaml
+  base_os_files:
+    - url: https://releases.ubuntu.com/20.04.2/ubuntu-20.04.2-live-server-amd64.iso
+      type: iso
+      filename: ubuntu-20.04.2-live-server-amd64.iso
   ```
 
 ### Templating
@@ -369,6 +439,28 @@ under [Installation](#installation)
   ```
 
   Type `./vpxe.sh -h` to see othe syntax options.
+
+  #### If using pre-built container images version of ESP, use the following command to start vpxe.sh
+
+  ```bash
+  docker exec -it esp_core_1 vpxe.sh 
+  ```
+
+## Bootable USB
+
+  #### What is it?:
+
+  Creates bootable USB images to boot target devices without Ethernet or PXE available. Or simply use it to a boot a system outside the network.
+
+  #### Give it try:
+
+  Perform your regular steps of installing Edge Software Provisioner, configure your profiles, run `./buils.sh` and `./run.sh`.
+  To start Make USB run the following in the same directory:
+  ```bash
+  ./makeusb.sh
+  ```
+
+  Type `./makeusb.sh -h` to see othe syntax options.
 
 ## Known Limitations
 

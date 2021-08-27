@@ -34,7 +34,7 @@ export T_INFO_ICON="[${T_BOLD}${C_YELLOW}i${T_RESET}]"
 export T_QST_ICON="${T_BOLD}[?]${T_RESET}"
 
 function printMsg() {
-    echo -e "${1}" 2>&1
+    echo -e "${T_RESET}${1}" 2>&1
 }
 
 function printMsgNoNewline() {
@@ -195,6 +195,12 @@ function run() {
         echo -e "\n${T_ERR}Log Preview:${T_RESET}" 2>&1
         tail -n 3 "${log}" 2>&1
         echo -e "${T_ERR}Please check ${log} for more details.${T_RESET}\n\n" 2>&1
+        if [ -f conf/.build.lock ]; then
+            rm conf/.build.lock /dev/null 2>&1
+        fi
+        if [ -f ../../conf/.build.lock ]; then
+            rm ../../conf/.build.lock /dev/null 2>&1
+        fi
         exit 1
     else
         echo "$(getFormattedDate) SUCCESS: ${msg}..." >> "${log}"
@@ -227,6 +233,22 @@ validateInput() {
 
         "url" )
             local regex='^(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]\.[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]$'
+            if [[ ! ${string} =~ ${regex} ]]; then
+                printErrMsg "  ${msg}"
+                exit;
+            fi
+        ;;
+
+        "fqdn" )
+            local regex='^(?=^.{4,253}$)(^(?:[a-zA-Z](?:(?:[a-zA-Z0-9\-]){0,61}[a-zA-Z])?\.)+[a-zA-Z]{2,}$)$'
+            if [[ ! ${string} =~ ${regex} ]]; then
+                printErrMsg "  ${msg}"
+                exit;
+            fi
+        ;;
+
+        "email" )
+            local regex='^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$'
             if [[ ! ${string} =~ ${regex} ]]; then
                 printErrMsg "  ${msg}"
                 exit;

@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+source /opt/bootstrap/functions
+
+until [ -f /opt/bootstrap/wifi-scan.run ] || [ -f /opt/bootstrap/init.done ]; do
+	echo "[            ] Waiting for init to finish."
+	sleep 20
+done
+
+if [ -f /opt/bootstrap/init.done ]; then
+	exit
+fi
+
+if [ -d "/sys/class/ieee80211" ]; then
+  echo ""
+  echo ""
+  echo "WiFi card found..."
+  echo ""
+  echo ""
+  if ( ip link show mlan0 > /dev/null 2>&1 ); then 
+    # workaround for mlan0 driver of Advantech
+    (ip link set mlan0 down ; ip link set mlan0 name wlan0) || /bin/true
+  fi
+  if (! ip link show wlan0 | grep ",UP" > /dev/null ); then
+    echo "[            ] Bringing WiFi interface up..."
+    ip link set wlan0 up
+  fi
+  PS3="Select the wireless network: "
+  select SSID in $(iwlist wlan0 scan | grep ESSID | awk '{print $1}' | awk -F\" '{print $2}'); do
+    if [ "${SSID}" != "" ]; then
+      read -p "Enter enter the pre-shared key for SSID - '${SSID}': " PSK
+      cp /hostroot/var/services/wlan/wpa_supplicant/wpa_supplicant.conf /hostroot/var/services/wlan/wpa_supplicant/wpa_supplicant.conf.tmp
+      sed -i -e "s/@@SSID@@/${SSID}/g" -e "s/@@PSK@@/${PSK}/g" /hostroot/var/services/wlan/wpa_supplicant/wpa_supplicant.conf.tmp
+      cat /hostroot/var/services/wlan/wpa_supplicant/wpa_supplicant.conf.tmp > /hostroot/var/services/wlan/wpa_supplicant/wpa_supplicant.conf
+      rm /hostroot/var/services/wlan/wpa_supplicant/wpa_supplicant.conf.tmp
+      break
+    fi
+  done
+  echo ""
+  echo ""
+  echo "[            ] Waiting WiFi to get and IP Address..."
+  sleep 7.5
+  echo "[            ] Updating system time..."
+  ntpd -d -N -q -n -p us.pool.ntp.org
+  echo ""
+  echo ""
+  echo ""
+  echo ""
+  echo -e "IP Address:\n$(ip -o -4 addr list $(ip route show 0.0.0.0/0 | awk '{print $5}') | head -1 | awk '{print $4}' | cut -d/ -f1)\n\nRoutes:\n$(ip route show)\n\nLANs:\n$(ip -o -4 addr list)\n"
+fi
+
+touch /opt/bootstrap/wifi-scan.done

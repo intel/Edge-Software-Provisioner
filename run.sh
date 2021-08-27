@@ -20,8 +20,10 @@ printHelp() {
     printMsg " to bring up all containers without any downtime."
     printMsg ""
     printMsg " You can specify one the following options:"
+    printMsg "  ${T_BOLD}-m${T_RESET}, --no-dnsmasq    Dnsmasq service will not be started (no DHCP or PXE)"
     printMsg "  ${T_BOLD}-f${T_RESET}, --force         Will forceably stop & re-create the containers"
     printMsg "  ${T_BOLD}-r${T_RESET}, --restart       Will only restart the containers"
+    printMsg "  ${T_BOLD}-d${T_RESET}, --down          Will stop all containers and cleanup excess mounts"
     printMsg "  ${T_BOLD}-n${T_RESET}, --no-tail-logs  Do not tail the containers' logs after completion (default is to tail)"
     printMsg "  ${T_BOLD}-h${T_RESET}, --help          Show this help dialog"
     printMsg ""
@@ -30,13 +32,17 @@ printHelp() {
     exit 0
 }
 
+NO_DNSMASQ="false"
 FORCE_RECREATE="false"
 FORCE_RESTART="false"
+DOWN="false"
 NO_TAIL_LOGS="false"
 for var in "$@"; do
     case "${var}" in
+        "-m" | "--no-dnsmasq"   ) NO_DNSMASQ="true";;
         "-f" | "--force"        ) FORCE_RECREATE="true";;
         "-r" | "--restart"      ) FORCE_RESTART="true";;
+        "-d" | "--down"         ) DOWN="true";;
         "-n" | "--no-tail-logs" ) NO_TAIL_LOGS="true";;
         "-h" | "--help"         ) printHelp;;
     esac
@@ -46,6 +52,24 @@ printMsg "\n-------------------------"
 printMsg " ${T_BOLD}${C_BLUE}Welcome${T_RESET}"
 printMsg "-------------------------"
 logMsg "Welcome to the builder host run script"
+
+if [[ "${DOWN}" == "true" ]]; then
+    printDatedInfoMsg "Stopping containers..."
+    logMsg "run.sh down containers"
+    sleep 1
+    if podman -v >/dev/null 2>&1; then
+        scripts/espctl.sh down
+    else
+        docker-compose down
+    fi
+    PWD=$(pwd)
+    umount template/pxe_bg.png >/dev/null 2>&1
+    umount data/srv/tftp/images >/dev/null 2>&1
+    umount data/srv/tftp/pxelinux.cfg >/dev/null 2>&1
+    umount data/srv/tftp/pxelinux.cfg_legacy >/dev/null 2>&1
+    umount data/usr/share/nginx/html/tftp >/dev/null 2>&1
+    exit
+fi
 
 if [[ "${FORCE_RESTART}" == "true" ]]; then
     printDatedInfoMsg "Restarting containers..."
@@ -65,40 +89,31 @@ else
         else
             docker-compose down
         fi
+        PWD=$(pwd)
+        umount template/pxe_bg.png >/dev/null 2>&1
+        umount data/srv/tftp/images >/dev/null 2>&1
+        umount data/srv/tftp/pxelinux.cfg >/dev/null 2>&1
+        umount data/srv/tftp/pxelinux.cfg_legacy >/dev/null 2>&1
         umount data/usr/share/nginx/html/tftp >/dev/null 2>&1
-        umount data/usr/share/nginx/html/tftp >/dev/null 2>&1
-        umount data/srv/tftp >/dev/null 2>&1
-        umount data/srv/tftp >/dev/null 2>&1
-        umount data/usr/share/nginx/html/index.html >/dev/null 2>&1
-        umount data/usr/share/nginx/html/index.html >/dev/null 2>&1
-        umount template/nginx/index.html >/dev/null 2>&1
-        umount template/nginx/index.html >/dev/null 2>&1
     fi
 
-    mkdir -p /var/cache/squid && chmod 777 /var/cache/squid
-    printDatedInfoMsg "Starting dnsmasq container..."
-    logMsg "run.sh bringing up containers"
-    if podman -v >/dev/null 2>&1; then
-        scripts/espctl.sh up dnsmasq
-    else
-        docker-compose up -d dnsmasq
+    if [[ "${NO_DNSMASQ}" == "false" ]]; then
+        printDatedInfoMsg "Starting dnsmasq container..."
+        logMsg "run.sh bringing up containers"
+        if podman -v >/dev/null 2>&1; then
+            scripts/espctl.sh up dnsmasq
+        else
+            docker-compose up -d dnsmasq
+        fi
+        printDatedInfoMsg "Waiting a moment before starting the remaining containers..."
+        sleep 3
     fi
-    printDatedInfoMsg "Waiting a moment before starting the remaining containers..."
-    sleep 3
-    if podman -v >/dev/null 2>&1; then
-        scripts/espctl.sh up
-    else
-        docker-compose up -d
-    fi
-fi
 
-if podman -v >/dev/null 2>&1; then
-    printMsg ""
-    printMsg ""
-    printBanner "${C_RED}This system is using Podman to run ESP. Please use 'scripts/espctl.sh down' to stop ESP!"
-    printMsg ""
-    printMsg ""
-    sleep 3
+    if podman -v >/dev/null 2>&1; then
+        scripts/espctl.sh up --no-dnsmasq
+    else
+        docker-compose up -d core web certbot registry-mirror squid mirror smb
+    fi
 fi
 
 if [[ "${NO_TAIL_LOGS}" == "true" ]]; then

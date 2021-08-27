@@ -17,31 +17,35 @@ ntpd -d -N -q -n -p us.pool.ntp.org 2>&1 | tee -a ${CONSOLE_OUTPUT}
 
 echo "[            ] Discovering hardware..." 2>&1 | tee -a ${CONSOLE_OUTPUT}
 for f in $(ls /sys/bus/*/devices/*/modalias); do
+  if [ -f $f ]; then
     modprobe -abq $(cat $f) >/dev/null 2>&1
+  fi
 done
 
 sleep 1
 
-for f in $(ls /sys/bus/*/devices/*/modalias); do 
+for f in $(ls /sys/bus/*/devices/*/modalias); do
+  if [ -f $f ]; then
     modprobe -abq $(cat $f) >/dev/null 2>&1
+  fi
 done
 
 kernel_params=$(cat /proc/cmdline)
 if [[ $kernel_params = *"httpserver="* ]]; then
-	tmp="${kernel_params##*httpserver=}"
-	param_httpserver="${tmp%% *}"
+  tmp="${kernel_params##*httpserver=}"
+  param_httpserver="${tmp%% *}"
 fi
 
 if [[ $kernel_params = *"proxy="* ]]; then
-	tmp="${kernel_params##*proxy=}"
-	param_proxy="${tmp%% *}"
+  tmp="${kernel_params##*proxy=}"
+  param_proxy="${tmp%% *}"
 
-	export http_proxy=${param_proxy}
-	export https_proxy=${param_proxy}
-	export no_proxy="localhost,127.0.0.1,${param_httpserver}"
-	export HTTP_PROXY=${param_proxy}
-	export HTTPS_PROXY=${param_proxy}
-	export NO_PROXY="localhost,127.0.0.1,${param_httpserver}"
+  export http_proxy=${param_proxy}
+  export https_proxy=${param_proxy}
+  export no_proxy="localhost,127.0.0.1,${param_httpserver}"
+  export HTTP_PROXY=${param_proxy}
+  export HTTPS_PROXY=${param_proxy}
+  export NO_PROXY="localhost,127.0.0.1,${param_httpserver}"
 fi
 
 iptables -L  >/dev/null 2>&1

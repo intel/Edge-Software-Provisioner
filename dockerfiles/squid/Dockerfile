@@ -1,9 +1,9 @@
 # Copyright (C) 2020 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-# Oritingal work cam from https://github.com/alatas/squid-alpine-ssl
+# Original work cam from https://github.com/alatas/squid-alpine-ssl
 
-FROM alpine:3.11
+FROM alpine:3.12
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
 RUN apk update && apk add --no-cache \

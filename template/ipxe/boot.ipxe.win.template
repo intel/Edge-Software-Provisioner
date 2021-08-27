@@ -1,0 +1,8 @@
+#!ipxe
+prompt --key 0x02 --timeout 2000 Press Ctrl-B for the iPXE command line... && shell ||
+
+cpuid --ext 29 && set arch amd64 || set arch x86
+
+kernel http://@@HOST_IP@@/tftp/images/ipxe/wimboot
+initrd http://@@HOST_IP@@/tftp/images/@@PROFILE_NAME@@/bcd
+boot

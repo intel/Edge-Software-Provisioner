@@ -71,6 +71,13 @@ addLineToVirtualPxeMenu() {
     echo "${trimmed_line}"
 }
 
+# When --boot-profile set this will make the PXE menu boot a specific profile
+replaceDefaultPXEboot() {
+    local number=$1
+
+    sed -i "s#ONTIMEOUT local#ONTIMEOUT ${number}#" ${TFTP_ROOT}/pxelinux.cfg/tmp_default
+}
+
 # Helper function to return the location of the staging file for the PXE menu
 getTmpPxeMenuLocation() {
     echo "${TFTP_ROOT}/pxelinux.cfg/tmp_default"

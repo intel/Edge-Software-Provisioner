@@ -1,7 +1,7 @@
 # Copyright (C) 2020 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM docker:19.03.15-dind
+FROM docker:20.10.2-dind
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
 RUN apk update && apk add --no-cache \
@@ -49,5 +49,6 @@ RUN mkdir -p /opt/bootstrap
 COPY bash/init /opt/bootstrap/
 COPY bash/functions /opt/bootstrap/
 COPY bash/start /opt/bootstrap/
+COPY bash/wifi-scan /opt/bootstrap/
 ENTRYPOINT []
 CMD ["/bin/bash","/opt/bootstrap/start"]

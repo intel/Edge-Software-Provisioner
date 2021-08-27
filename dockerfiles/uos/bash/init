@@ -36,5 +36,37 @@ if [[ $kernel_params = *"token="* ]]; then
 	param_token="${tmp%% *}"
 fi
 
-wget --no-check-certificate --header "Authorization: token ${param_token}" -O - ${param_bootstrap} 2> ${CONSOLE_OUTPUT} | bash -s - $param_httpserver
+if [ "$(ip route show 0.0.0.0/0 | awk '{print $5}')" == "" ]; then
+	echo ""  2>&1 | tee -a ${CONSOLE_OUTPUT}
+	echo "No routable network interface found." 2>&1 | tee -a ${CONSOLE_OUTPUT}
+	echo -e "Routes:\n$(ip route show)\n\nLANs:\n$(ip -o -4 addr list)\n" 2>&1 | tee -a ${CONSOLE_OUTPUT}
 
+	if [ -d "/sys/class/ieee80211" ]; then
+		if [ -f /opt/bootstrap/init.done ]; then
+			rm /opt/bootstrap/init.done
+		fi
+
+		touch /opt/bootstrap/wifi-scan.run
+		until [ -f /opt/bootstrap/wifi-scan.done ]; do
+			echo "[            ] Waiting for wifi-scan to finish."
+			sleep 5
+		done
+	fi
+fi
+touch /opt/bootstrap/init.done
+
+if [ "$(ip route show 0.0.0.0/0 | awk '{print $5}')" != "" ]; then
+	if [ $( nc -vz ${param_httpserver} 80; echo $?; ) -ne 0 ] && [ $( nc -vz ${param_httpserver} 443; echo $?; ) -ne 0 ]; then
+		echo "Unable to connect to ${param_httpserver} and the network is up.  Verify the service is up and running." 2>&1 | tee -a ${CONSOLE_OUTPUT}
+		echo "" 2>&1 | tee -a ${CONSOLE_OUTPUT}
+		echo -e "IP Address:\n$(ip -o -4 addr list $(ip route show 0.0.0.0/0 | awk '{print $5}') | head -1 | awk '{print $4}' | cut -d/ -f1)\n\nRoutes:\n$(ip route show)\n\nLANs:\n$(ip -o -4 addr list)\n" 2>&1 | tee -a ${CONSOLE_OUTPUT}
+	else
+		if [ $( nc -vz ${param_httpserver} 443; echo $?; ) -eq 0 ]; then
+			wget --no-check-certificate --header "Authorization: token ${param_token}" -O - ${param_bootstrap/http:/https:} 2> ${CONSOLE_OUTPUT} | bash -s - $param_httpserver
+		else
+			wget --header "Authorization: token ${param_token}" -O - ${param_bootstrap/https:/http:} 2> ${CONSOLE_OUTPUT} | bash -s - $param_httpserver
+		fi
+	fi
+else
+	echo "No routable networks are up."  2>&1 | tee -a ${CONSOLE_OUTPUT}
+fi
