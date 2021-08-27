@@ -273,7 +273,7 @@ The following kernel parameters can be added to `conf/config.yml`
 * `release` - [prod | dev] If set to prod the system will shutdown after it is provisioned.  Altnerativily it will reboot
 * `token` - GitHub token for private repositories, if this profile is in a private respository this token should have access to this repo
 * `username` - Initial user name. Defaults to 'sys-admin'
-* `network` - By default this installes a basic network if omitted.  Valid options are `bridged` which enables a bonded bridged networks accross all network devices or `network-manager` which gives management to the Network Manager utility.
+* `network` - By default this installs a basic network if omitted.  Valid options are `bridged` which enables a bonded bridged networks accross all network devices or `network-manager` which gives management to the Network Manager utility.
 * `wpassid` - uOS WPA SSID if no ethernet is found
 * `wpapsk` - uOS WPA Pre-Shared Key if no ethernet is found
 * `wifissid` - Target system WiFi SSID
