@@ -423,6 +423,7 @@ processBuild() {
     local profile_name=$4
     # local container_name=$( echo "builder_$profile_name" | sed -r 's#[:/]#-#g')
     local container_name="build"
+    local i=0
 
     mkdir -p ${WEB_FILES}/${profile_name}/build
     mkdir -p ${EMBEDDED_FILES}/${profile_name}
@@ -445,7 +446,16 @@ processBuild() {
         docker run -d --privileged --name build-docker ${DOCKER_RUN_ARGS} -v $(pwd)/data/tmp/build:/var/run -v $(pwd)/data/lib/docker:/var/lib/docker docker:19.03.12-dind && \
         sleep 7 && docker restart build-docker && \
         echo 'Waiting for Docker'; \
-        while (! docker -H unix:///$(pwd)/data/tmp/build/docker.sock ps ); do echo -n '.'; sleep 0.5; done; echo 'ready' && \
+        i=0; \
+        while (! docker -H unix:///$(pwd)/data/tmp/build/docker.sock ps ); do 
+            i=$((i+1)); \
+            echo -n '.'; \
+            sleep 0.5; \
+            if [ $i -eq 20 ]; then docker restart build-docker; fi; \
+            if [ $i -eq 40 ]; then docker restart build-docker; fi; \
+            if [ $i -eq 60 ]; then echo 'build-docker will not start.  Please review docker logs build-docker.  Run this build again will sometimes fix the problem.'; false; exit; fi; \
+        done; \
+        echo 'ready' && \
         docker run --rm --privileged --name ${container_name} ${ENTRYPOINT_CLI} \
             -v /run/docker.sock:/opt/run/sys.sock \
             -v $(pwd)/data/tmp/build:/var/run \
@@ -470,7 +480,7 @@ processEmbedded() {
     mkdir -p ${EMBEDDED_FILES}/${profile_name}
     cp ${TFTP_IMAGES}/uos/initrd ${uos_profile_path}/
 
-    local message="  Embedding files into uOS.  In another terminal run 'docker logs ${profile_name} -f' to watch progress."
+    local message="  Embedding files into uOS.  In another terminal run 'docker logs esp_embedding -f' to watch progress."
     run "${message}" \
         "docker run --rm --privileged --name esp_embedding \
             -v ${uos_profile_path}:/opt/images \

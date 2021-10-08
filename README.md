@@ -48,11 +48,11 @@ The Edge Software Provisioner (ESP) enables ODMs, System Integrators and Develop
 
 A majority of ODMs and SI's use the "golden" image method; by building a complete system by hand and then copying the hard drive contents into a "golden" image.  The problem with this process is golden images are not always easily transferrable from hardware to hardware.  Additionally, after a period of time that golden image falls behind from CVE patches causing the ODM or SI to perform additional steps of installation before shipping.  Golden images are large (measured in gigabytes) and require a lot of disk farm to store.
 
-Edge Software Provisioner is a "Just-in-Time" provisioning process; at the time of installation it builds and installs all the components on the target device with the latest release of the software components.  When the ESP OS boots on the target device it "discovers" the hardware and makes adjustments to the installation process through Profile.  Profiles are small (measured in kilobytes) and pulled via a URL.
+Edge Software Provisioner is a "Just-in-Time" provisioning process; at the time of installation it builds and installs all the components on the target device with the latest and/or fixed release of the software components.  When the ESP OS boots on the target device it "discovers" the hardware and makes adjustments to the installation process through Profile.  Profiles are small (measured in kilobytes) and pulled via a URL.
 
 ## Introduction
 
-The Edge Software Provisioner (ESP) is a collection of scripts that enables network-wide [PXE](https://en.wikipedia.org/wiki/Preboot_Execution_Environment) booting of customizable operating systems, referred to as "profiles". It has a lightweight footprint, requiring only Bash, Docker, and Docker Compose. Profiles can be any typical Linux distribution, such as RancherOS, Ubuntu, Clear Linux.
+The Edge Software Provisioner (ESP) is a collection of scripts that enables network-wide [PXE](https://en.wikipedia.org/wiki/Preboot_Execution_Environment) or USB booting of customizable operating systems, referred to as "profiles". It has a lightweight footprint, requiring only Bash, Docker, and Docker Compose. Profiles can be any Linux distribution, such as Clear Linux, Ubuntu, Red Hat, Suse, Yocto, Arch Linux, RancherOS.
 
 The main executable to setup a device as a Edge Software Provisioner is `build.sh`. This script will automatically build a few Docker images, download necessary files as required by profiles, prepare the PXE boot menu, and launch the following dockerized services:
 
@@ -63,6 +63,8 @@ The main executable to setup a device as a Edge Software Provisioner is `build.s
   - **squid** - optional, used for caching http requests
 
   - **registry** - optional, used for caching Docker images
+
+  - **Gitea** - optional, used for mirroring git repositories
 
 [Clear Linux](https://github.com/intel/rni-profile-base-clearlinux), [Ubuntu](https://github.com/intel/rni-profile-base-ubuntu) and [RancherOS](https://github.com/intel/rni-profile-base-rancheros) are provided as example profiles.
 
@@ -84,6 +86,8 @@ The following is required:
 The Edge Software Provisioner (ESP) must be in an isolated network and there must only be one ESP in the network.  ESP will detect if there is an existing DHCP or DNS and will configure itself accordingly.  It will also detect if the host has a static or dynamic IP IPv4 address.  If the host is a dynamic IP address and if the IP address changes you must run `./build.sh -S -P && ./run.sh --restart` to update ESP configuration with the new IP address.
 
 WARNING: DO NOT RUN ESP ON YOUR CORPORATE NETWORK. *It must be on an isoloated network.*
+
+NOTE: If using Ubuntu, do not use Snapd Docker, install Docker using aptitude.  Dnsmasq must not been running on the system from some other service.  Please confirm with `ps -auxww | grep dnsmasq`.
 
 NOTE: When testing with virtual machines, their LAN adapters should be put in Bridge Mode or the VMs must be within the same virtual network.
 

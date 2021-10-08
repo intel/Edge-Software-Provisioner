@@ -25,7 +25,7 @@ printHelp() {
     printMsg "  ${T_BOLD}-f${T_RESET}, --skip-files           Skips syncronizing the files for profiles"
     printMsg "  ${T_BOLD}-s${T_RESET}, --skip-build-uos       Skips building the Micro Operating System (uOS)"
     printMsg "  ${T_BOLD}-S${T_RESET}, --skip-image-builds    Skips building all images and uOS"
-    printMsg "  ${T_BOLD}-S${T_RESET}, --skip-image-embedded  Skips embedding custom files into uOS"
+    printMsg "  ${T_BOLD}-e${T_RESET}, --skip-image-embedded  Skips embedding custom files into uOS"
     printMsg "  ${T_BOLD}-k${T_RESET}, --uos-kernel           Valid input value is [ clearlinux | fedora | alpine ].  Defaults to 'clearlinux'."
     printMsg "  ${T_BOLD}-c${T_RESET}, --clean-uos            will clean the intermediary docker images used during building of uOS"
     printMsg "  ${T_BOLD}-b${T_RESET}, --skip-backups         Skips the creation of backup files inside the data directory when re-running build.sh"
@@ -277,7 +277,7 @@ if [[ "${BUILD_IMAGES}" == "true" ]]; then
 
     # Build the core image
     run "(10/11) Building builder-core" \
-        "docker run -t --rm --privileged -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
+        "docker run -t --rm ${DOCKER_RUN__ARGS} --privileged -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
         cd /work && \
         mkdir -p dockerfiles/core/files/conf/ && \
         if [ ! -f dockerfiles/core/files/conf/config.yml ]; then rsync -rtc --exclude=.build.lock ./conf ./dockerfiles/core/files/; fi && \
@@ -293,7 +293,7 @@ if [[ "${BUILD_IMAGES}" == "true" ]]; then
 
     # Build the certbot image
     run "(11/11) Building builder-certbot" \
-        "docker run -t --rm --privileged -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
+        "docker run -t --rm ${DOCKER_RUN_ARGS} --privileged -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
         cd /work && \
         rsync -rtc ./scripts ./dockerfiles/certbot/'; \
         docker build --rm ${DOCKER_BUILD_ARGS} -t builder-certbot dockerfiles/certbot" \

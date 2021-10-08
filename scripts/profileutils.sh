@@ -1185,7 +1185,6 @@ genProfileUsbBoot() {
                 IMG_SIZE=\$((${KERNEL_SIZE} + ${INITRD_SiZE} + 52428800)) && \
                 truncate --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
-                dd bs=440 count=1 conv=notrunc if=/usr/share/syslinux/mbr.bin of=\${TEMP_IMG_DEV} > /dev/null 2>&1 && \
                 parted --script \${TEMP_IMG_DEV} mklabel msdos mkpart primary fat32 1MiB 100% set 1 boot on && \
                 mkfs -t vfat \${TEMP_IMG_DEV}p1 > /dev/null 2>&1 && \
                 syslinux -i \${TEMP_IMG_DEV}p1 && \
@@ -1198,6 +1197,9 @@ genProfileUsbBoot() {
                 umount /mnt && \
                 partx -d \${TEMP_IMG_DEV} && \
                 losetup -d \${TEMP_IMG_DEV} && \
+                dd if=/usr/share/syslinux/altmbr.bin bs=439 count=1 conv=notrunc of=/usb/temp.img > /dev/null 2>&1 && \
+                printf '\1' | dd bs=1 count=1 seek=439 conv=notrunc of=/usb/temp.img > /dev/null 2>&1 && \
+                sfdisk -A /usb/temp.img 1 > /dev/null 2>&1 && \
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
             umount /dev/console
         fi

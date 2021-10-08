@@ -22,6 +22,8 @@ downloadBaseOSFiles() {
     else
         for ((j = 0; j < "${#files_config_base_os_files__url[@]}"; j += 1)); do
             local url=${files_config_base_os_files__url[j]}
+            validateInput url "${url}" "'url' under 'base_os_files' in files.yml of profile ${profileName} is not valid URL: ${url}"
+            
             local filename=${files_config_base_os_files__filename[j]}
 
             if [ "${url}" != "None" ]; then
@@ -44,6 +46,8 @@ downloadGeneralFiles() {
         umountAllISO "${WEB_FILES}/${profileName}"
         for ((j = 0; j < "${#files_config_general_files__url[@]}"; j += 1)); do
             local url=${files_config_general_files__url[j]}
+            validateInput url "${url}" "'url' under 'general_files' in files.yml of profile ${profileName} is not valid URL: ${url}"
+
             local destination_file=${files_config_general_files__destination_file[j]}
             local token=${files_config_general_files__token[j]}
 
