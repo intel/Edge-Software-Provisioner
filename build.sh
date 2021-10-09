@@ -277,7 +277,7 @@ if [[ "${BUILD_IMAGES}" == "true" ]]; then
 
     # Build the core image
     run "(10/11) Building builder-core" \
-        "docker run -t --rm ${DOCKER_RUN__ARGS} --privileged -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
+        "docker run -t --rm ${DOCKER_RUN_ARGS} --privileged -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
         cd /work && \
         mkdir -p dockerfiles/core/files/conf/ && \
         if [ ! -f dockerfiles/core/files/conf/config.yml ]; then rsync -rtc --exclude=.build.lock ./conf ./dockerfiles/core/files/; fi && \
