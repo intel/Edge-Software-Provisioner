@@ -185,7 +185,7 @@ if [[ "${UP}" == "true" ]]; then
 
   if ! docker ps -a | grep ${CURDIR}_mirror_1 > /dev/null; then
     if [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "mirror" ]; then
-      podman run -d --privileged --name=${CURDIR}_mirror_1 --restart=always -p 3003:3000 -p 222:22 -e USER_UID=1000 -e USER_GID=1000 -e DISABLE_REGISTRATION=true -e DEFAULT_PRIVATE=public -e ENABLE_PUSH_CREATE_USER=true -e ENABLE_PUSH_CREATE_ORG=true -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} --mount type=bind,source=${PWD}/./data/gitea,destination=/data --mount type=bind,source=/etc/timezone,destination=/etc/timezone,ro --mount type=bind,source=/etc/localtime,destination=/etc/localtime,ro gitea/gitea:1.12.6 
+      podman run -d --privileged --name=${CURDIR}_mirror_1 --restart=always -p 3003:3000 -p 222:22 -e USER_UID=1000 -e USER_GID=1000 -e DISABLE_REGISTRATION=true -e DEFAULT_PRIVATE=public -e ENABLE_PUSH_CREATE_USER=true -e ENABLE_PUSH_CREATE_ORG=true -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} --mount type=bind,source=${PWD}/./data/gitea,destination=/data --mount type=bind,source=/etc/timezone,destination=/etc/timezone,ro --mount type=bind,source=/etc/localtime,destination=/etc/localtime,ro builder-gitea
     fi
   fi
 
@@ -197,7 +197,7 @@ if [[ "${UP}" == "true" ]]; then
 
   if ! docker ps -a | grep ${CURDIR}_certbot_1 > /dev/null; then
     if [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "certbot" ]; then
-      podman run -d --privileged --name=${CURDIR}_certbot_1 --restart=always -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} --mount type=bind,source=${PWD}/./conf,destination=${PWD}/conf --mount type=bind,source=${PWD}/./data/certbot/conf,destination=/etc/letsencrypt --mount type=bind,source=${PWD}/./data/certbot/www,destination=/var/www/certbot --mount type=bind,source=${PWD}/./data/certbot/lib,destination=/var/lib/letsencrypt --mount type=bind,source=${PWD}/./data/etc/ssl/private,destination=/etc/ssl/private --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/web-cert,destination=/etc/ssl/cert builder-certbot 
+      podman run -d --privileged --name=${CURDIR}_certbot_1 --restart=on-failure -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} --mount type=bind,source=${PWD}/./conf,destination=/opt/esp/conf --mount type=bind,source=${PWD}/./data/certbot/conf,destination=/etc/letsencrypt --mount type=bind,source=${PWD}/./data/certbot/www,destination=/var/www/certbot --mount type=bind,source=${PWD}/./data/certbot/lib,destination=/var/lib/letsencrypt --mount type=bind,source=${PWD}/./data/etc/ssl/private,destination=/etc/ssl/private --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/web-cert,destination=/etc/ssl/cert builder-certbot 
     fi
   fi
 fi

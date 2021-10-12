@@ -28,7 +28,7 @@ if [ "${builder_config_letsencrypt_enabled}" == "true" ]; then
       cp /etc/letsencrypt/live/${builder_config_host_ip}/privkey.pem /etc/ssl/private/EB_web.key && \
       cp /etc/letsencrypt/live/${builder_config_host_ip}/fullchain.pem /etc/ssl/cert/EB_web.crt       
     fi
-    inotifywait -e move -m /etc/letsencrypt/live/${builder_config_host_ip}/ |
+    inotifywait -e move -e create -m /etc/letsencrypt/live/${builder_config_host_ip}/ |
     while read -r directory events filename; do
       if [ "${filename}" == "privkey.pem" ]; then
         echo "/etc/letsencrypt/live/${builder_config_host_ip}/privkey.pem has changed."
