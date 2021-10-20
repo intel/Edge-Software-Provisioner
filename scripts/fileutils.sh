@@ -456,7 +456,7 @@ processBuild() {
             if [ $i -eq 60 ]; then echo 'build-docker will not start.  Please review docker logs build-docker.  Run this build again will sometimes fix the problem.'; false; exit; fi; \
         done; \
         echo 'ready' && \
-        docker run --rm --privileged --name ${container_name} ${ENTRYPOINT_CLI} \
+        docker run --rm --privileged --name ${container_name} ${DOCKER_RUN_ARGS} ${ENTRYPOINT_CLI} \
             -v /run/docker.sock:/opt/run/sys.sock \
             -v $(pwd)/data/tmp/build:/var/run \
             -v $(pwd)/data/persist:/opt/persist \
@@ -482,7 +482,7 @@ processEmbedded() {
 
     local message="  Embedding files into uOS.  In another terminal run 'docker logs esp_embedding -f' to watch progress."
     run "${message}" \
-        "docker run --rm --privileged --name esp_embedding \
+        "docker run --rm --privileged --name esp_embedding ${DOCKER_RUN_ARGS} \
             -v ${uos_profile_path}:/opt/images \
             -v ${WEB_PROFILE}/${profile_name}/embedded:/opt/profile_embedded \
             -v ${EMBEDDED_FILES}/${profile_name}:/opt/embedded \
