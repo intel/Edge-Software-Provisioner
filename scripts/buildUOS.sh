@@ -13,7 +13,7 @@ set -u
 
 # /dev/null is being deleted when using a proxy and compiling tools.  The following fix is to very /dev/null exists and if not create /dev/null
 if [ ! -f /dev/null ]; then
-    mknod -m 644 /dev/null c 1 3
+    mknod -m 666 /dev/null c 1 3
 fi
 
 export GIT_COMMIT=$(git log -1 --oneline 2> /dev/null | awk '{print $1}')
