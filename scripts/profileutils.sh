@@ -1124,7 +1124,7 @@ genProfileUsbBoot() {
                 mkdir -p ${TFTP_IMAGES}/uos/usb/${name}
                 message="Embedding files into uOS for ${name}."
                 run "${message}" \
-                    "docker run --rm --privileged --name esp_embedding \
+                    "docker run --rm --privileged ${DOCKER_RUN_ARGS} --name esp_embedding \
                         -v ${TFTP_IMAGES}/uos/usb:/opt/images:shared \
                         -v ${WEB_PROFILE}/${name}/embedded:/opt/profile_embedded:ro \
                         -v ${EMBEDDED_FILES}/${name}:/opt/embedded:ro \
@@ -1279,7 +1279,7 @@ genAllProfileUsbBoot() {
                 mkdir -p ${TFTP_IMAGES}/uos/usb/${profile_name}
                 message="Embedding files into uOS for ${profile_name}."
                 run "${message}" \
-                    "docker run --rm --privileged --name esp_embedding \
+                    "docker run --rm --privileged ${DOCKER_RUN_ARGS} --name esp_embedding \
                         -v ${TFTP_IMAGES}/uos/usb:/opt/images:shared \
                         -v ${WEB_PROFILE}/${profile_name}/embedded:/opt/profile_embedded:ro \
                         -v ${EMBEDDED_FILES}/${profile_name}:/opt/embedded:ro \
