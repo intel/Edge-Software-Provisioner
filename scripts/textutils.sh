@@ -196,10 +196,10 @@ function run() {
         tail -n 3 "${log}" 2>&1
         echo -e "${T_ERR}Please check ${log} for more details.${T_RESET}\n\n" 2>&1
         if [ -f conf/.build.lock ]; then
-            rm conf/.build.lock /dev/null 2>&1
+            rm conf/.build.lock > /dev/null 2>&1
         fi
         if [ -f ../../conf/.build.lock ]; then
-            rm ../../conf/.build.lock /dev/null 2>&1
+            rm ../../conf/.build.lock > /dev/null 2>&1
         fi
         exit 1
     else
