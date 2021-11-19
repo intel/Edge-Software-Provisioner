@@ -11,8 +11,9 @@
 
 set -u
 
-# /dev/null is being deleted when using a proxy and compiling tools.  The following fix is to very /dev/null exists and if not create /dev/null
-if [ ! -c /dev/null ]; then
+# /dev/null is being deleted when using a proxy and compiling tools.
+# The following fix is to verify /dev/null exists and if not create /dev/null
+if [ ! -f /dev/null ]; then
     mknod -m 666 /dev/null c 1 3
 fi
 

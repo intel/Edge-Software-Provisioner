@@ -4,15 +4,16 @@
 FROM docker:20.10.8
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-RUN apk update && apk add --no-cache \
+RUN apk --no-cache add  \
       bash \
       dumb-init \
       inotify-tools \
       git \
       rsync \
       syslinux \
-      wget \
-    && update-ca-certificates
+      wget && \
+    apk --no-cache -U upgrade && \
+    update-ca-certificates
 
 RUN mkdir -p /opt/core/conf /opt/core/data/srv /opt/core/scripts /opt/core/dockerfiles && \
     mkdir -p /usr/local/bin && \

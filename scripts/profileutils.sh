@@ -218,7 +218,7 @@ pullProfile() {
             logInfoMsg "No Git authentication method found (git_username/git_token, or SSH-Agent)."
         fi
         run "  ${C_GREEN}${name}${T_RESET}: Pulling latest from ${git_branch_name} on repo ${git_remote_url}" \
-            "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/${name}:/tmp/profiles/${name} -w /tmp/profiles/${name} builder-git sh -c 'git fetch origin ${git_branch_name} && git reset --hard origin/${git_branch_name} && git pull origin ${git_branch_name}'" \
+            "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/${name}:/tmp/profiles/${name} -w /tmp/profiles/${name} builder-git sh -c 'git fetch origin ${git_branch_name} && git reset --hard ${git_branch_name} && git pull origin ${git_branch_name}'" \
             ${LOG_FILE}
     else
         printDatedErrMsg "Profile ${name} either is improperly configured or does not exist."
@@ -251,7 +251,7 @@ pullProfile() {
                 logInfoMsg "Pull - No Git authentication method found (git_username/git_token, or SSH-Agent)."
             fi
             run "  ${C_GREEN}${base_name}${T_RESET}: Pulling latest from ${git_base_branch_name} on repo ${git_remote_url}" \
-                "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles/${base_name} -w /tmp/profiles/${base_name} builder-git sh -c 'git fetch origin ${git_base_branch_name} && git reset --hard origin/${git_base_branch_name} && git pull origin ${git_base_branch_name}'" \
+                "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles/${base_name} -w /tmp/profiles/${base_name} builder-git sh -c 'git fetch origin ${git_base_branch_name} && git reset --hard ${git_base_branch_name} && git pull origin ${git_base_branch_name}'" \
                 ${LOG_FILE}
         else
             printDatedErrMsg "Profile ${base_name} either is improperly configured or does not exist."

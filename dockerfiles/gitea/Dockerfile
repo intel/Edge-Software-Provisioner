@@ -4,8 +4,8 @@
 FROM gitea/gitea:1.15.3
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-RUN apk update && apk add --no-cache \
-      bash
+RUN apk --no-cache add bash && \
+    apk --no-cache -U upgrade
 
 COPY init.sh /usr/local/bin/init.sh
 

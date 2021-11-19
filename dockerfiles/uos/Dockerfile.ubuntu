@@ -4,8 +4,8 @@
 FROM alpine:3.12 as kernel-builder
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-ARG UBUNTU_RELEASE=5.8.0-42-generic
-ARG KERNEL_VERSION=5.8.0-42.47_amd64
+ARG UBUNTU_RELEASE=5.8.0-56-generic
+ARG KERNEL_VERSION=5.8.0-56.63_amd64
 ARG KERNEL_PREFIX
 
 RUN apk update && apk add --no-cache \
