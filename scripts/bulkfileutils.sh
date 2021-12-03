@@ -252,10 +252,10 @@ processBuilds() {
                 local container=${files_config_build__container[j]}
                 validateInput container "${container}" "'container' in files.yml of profile ${profileName} is not valid container name: ${container}"
             fi
-            if [ "${files_config_build__entrypoint[j]}" == '""' ]; then
+            if [ -z "${files_config_build__entrypoint[j]+x}" ]; then
                 local entrypoint=""
             else
-                local entrypoint="--entrypoint=\"${files_config_build__entrypoint[j]}\""
+                local entrypoint="${files_config_build__entrypoint[j]}"
             fi
             if [ -z "${files_config_build__cmd[j]+x}" ]; then
                 local cmd="sh -c"
