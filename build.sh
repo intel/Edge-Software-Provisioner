@@ -13,7 +13,7 @@ fi
 # /dev/null is sometimes being deleted by a bug in Docker
 # Verify /dev/null exists and if not create it
 if [ ! -f /dev/null ]; then
-    mknod -m 644 /dev/null c 1 3
+    mknod -m 666 /dev/null c 1 3
 fi
 
 # If running from within container change to builder directory
