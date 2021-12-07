@@ -11,8 +11,9 @@ if [[ $(id -u) -ne 0 ]]; then
 fi
 
 # /dev/null is sometimes being deleted by a bug in Docker
-# Verify /dev/null exists and if not create it
-if [ ! -f /dev/null ]; then
+# Verify /dev/null exists and is a character device file. If not, (re-)create it
+if [ ! -c /dev/null ]; then
+    rm -f /dev/null
     mknod -m 666 /dev/null c 1 3
 fi
 
