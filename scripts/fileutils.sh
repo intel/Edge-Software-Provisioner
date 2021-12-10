@@ -434,7 +434,7 @@ processBuild() {
         local BASE_BIND=""
     fi
 
-    if [ ! -z "${entrypoint}" ]; then
+    if [ ! -z "${entrypoint}" ] && [ "${entrypoint}" != '""' ]; then
         local ENTRYPOINT_CLI="--entrypoint='${entrypoint}'"
     else
         local ENTRYPOINT_CLI=""
