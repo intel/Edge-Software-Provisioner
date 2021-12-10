@@ -456,7 +456,7 @@ processBuild() {
             if [ $i -eq 60 ]; then echo 'build-docker will not start.  Please review docker logs build-docker.  Run this build again will sometimes fix the problem.'; false; exit; fi; \
         done; \
         echo 'ready' && \
-        docker run --rm --privileged --name ${container_name} ${DOCKER_RUN_ARGS} --env DOCKER_RUN_ARGS='${DOCKER_RUN_ARGS//\'/}' ${ENTRYPOINT_CLI} \
+        docker run --rm --privileged --name ${container_name} ${DOCKER_RUN_ARGS} --env DOCKER_RUN_ARGS='${DOCKER_RUN_ARGS//\'/}' --env DOCKER_BUILD_ARGS='${DOCKER_BUILD_ARGS//\'/}' ${ENTRYPOINT_CLI} \
             -v /run/docker.sock:/opt/run/sys.sock \
             -v $(pwd)/data/tmp/build:/var/run \
             -v $(pwd)/data/persist:/opt/persist \
