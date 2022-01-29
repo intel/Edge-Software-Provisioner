@@ -114,7 +114,8 @@ if [ -n "${DEV}" ]; then
         _dev=$(ls -l ${_drive} | awk '{print $NF}')
         _usb=$(echo ${_drive} | awk -F'-' '{print $3}')
         _hex=$(echo ${_usb} | awk -F'_' '{print $NF}')
-        USB_DRIVE="${_usb/_${_hex}/}-(${_dev/..\/..\//\/dev/})"
+        _usbpath=${_dev/..\/..\//\/dev/}
+        USB_DRIVE="${_usb/_${_hex}/}-($_usbpath)"
     elif ( lsblk -p -S -o NAME,TRAN | grep usb | grep ${DEV} > /dev/null 2>&1 ); then
         USB_DRIVE="NO_USB_NAME-(${DEV})"
     else
@@ -133,7 +134,8 @@ if [ ! -n "${DEV}" ]; then
             _dev=$(ls -l ${_drive} | awk '{print $NF}')
             _usb=$(echo ${_drive} | awk -F'-' '{print $3}')
             _hex=$(echo ${_usb} | awk -F'_' '{print $NF}')
-            USB_NAMES="${USB_NAMES} ${_usb/_${_hex}/}-(${_dev/..\/..\//\/dev/})"
+            _usbpath=${_dev/..\/..\//\/dev/}
+            USB_NAMES="${USB_NAMES} ${_usb/_${_hex}/}-($_usbpath)"
         done
         for _drive in $(lsblk -p -S -o NAME,TRAN | grep usb | awk '{print $1}'); do
             if [[ "${USB_NAMES}" != *"${_drive}"* ]]; then
