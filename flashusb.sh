@@ -135,7 +135,7 @@ if [ ! -n "${DEV}" ]; then
             _usb=$(echo ${_drive} | awk -F'-' '{print $3}')
             _hex=$(echo ${_usb} | awk -F'_' '{print $NF}')
             _usbpath=${_dev/..\/..\//\/dev/}
-            USB_NAMES="${USB_NAMES} ${_usb/_${_hex}/}-($_usbpath)"
+            USB_NAMES="${USB_NAMES} ${_usb/_${_hex}/}-(${_usbpath})"
         done
         for _drive in $(lsblk -p -S -o NAME,TRAN | grep usb | awk '{print $1}'); do
             if [[ "${USB_NAMES}" != *"${_drive}"* ]]; then
