@@ -1176,7 +1176,7 @@ genProfileUsbBoot() {
                 cp -r /usr/share/syslinux/efi64/syslinux.efi /mnt/EFI/BOOT/BOOTX64.EFI && \
                 cp ${tmp_path}/syslinux.cfg /mnt/EFI/BOOT/syslinux.cfg && \
                 umount /mnt && \
-		sync && \
+                sync && \
                 partx -d \${TEMP_IMG_DEV} && \
                 losetup -d \${TEMP_IMG_DEV} && \
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
