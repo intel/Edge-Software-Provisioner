@@ -1352,7 +1352,7 @@ genAllProfileUsbBoot() {
                 sed -i 's#http://${builder_config_host_ip}/tftp/images/iso/memdisk#/memdisk#g' /mnt/syslinux.cfg && \
                 sed -i 's#http://${builder_config_host_ip}/tftp/images/#/#g' /mnt/syslinux.cfg && \
                 umount /mnt && \
-		sync && \
+                sync && \
                 partx -d \${TEMP_IMG_DEV} && \
                 losetup -d \${TEMP_IMG_DEV} && \
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
