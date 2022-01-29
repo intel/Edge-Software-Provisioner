@@ -1196,7 +1196,7 @@ genProfileUsbBoot() {
                 cp /usr/share/syslinux/*.c32 /mnt/ && \
                 cp ${tmp_path}/syslinux.cfg /mnt/syslinux.cfg && \
                 umount /mnt && \
-		sync && \
+                sync && \
                 partx -d \${TEMP_IMG_DEV} && \
                 losetup -d \${TEMP_IMG_DEV} && \
                 dd if=/usr/share/syslinux/altmbr.bin bs=439 count=1 conv=notrunc of=/usb/temp.img > /dev/null 2>&1 && \
