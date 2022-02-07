@@ -417,7 +417,7 @@ buildProfile() {
         local message="  Running Build process, this could take a very long time.  In another terminal run 'docker logs ${container_name} -f' to watch progress."
         run "${message}" \
             "docker rm -f builder-docker > /dev/null 2>&1; \
-            docker run -t --rm --privileged --name ${container_name} --env DOCKER_RUN_ARGS='${DOCKER_RUN_ARGS//\'/}' --env DOCKER_BUILD_ARGS='${DOCKER_BUILD_ARGS//\'/}' --entrypoint= -v /var/run:/var/run -v /tmp:/tmp -v $(pwd)/data/persist:/opt/persist ${BASE_BIND} -v ${WEB_PROFILE}/${profile_name}:${WEB_PROFILE}/${profile_name} -v ${WEB_FILES}/${profile_name}:${WEB_FILES}/${profile_name} docker:19.03.12 sh -c 'apk add bash rsync git coreutils; ${WEB_PROFILE}/${profile_name}/build.sh ${WEB_PROFILE}/${profile_name} ${WEB_FILES}/${profile_name}'; \
+            docker run -t --rm --privileged --name ${container_name} ${DOCKER_RUN_ARGS} --entrypoint= -v /var/run:/var/run -v /tmp:/tmp -v $(pwd)/data/persist:/opt/persist ${BASE_BIND} -v ${WEB_PROFILE}/${profile_name}:${WEB_PROFILE}/${profile_name} -v ${WEB_FILES}/${profile_name}:${WEB_FILES}/${profile_name} docker:19.03.12 sh -c 'apk add bash rsync git coreutils; ${WEB_PROFILE}/${profile_name}/build.sh ${WEB_PROFILE}/${profile_name} ${WEB_FILES}/${profile_name}'; \
             echo 'Finished with build, Cleaning up builder docker container...'; \
             docker rm -f builder-docker > /dev/null 2>&1 || true; \
             docker rm -f ${container_name} > /dev/null 2>&1|| true" \
