@@ -11,13 +11,6 @@
 
 set -u
 
-# /dev/null is being deleted when using a proxy and compiling tools.
-# The following fix is to verify /dev/null exists and if not create /dev/null
-if [ ! -c /dev/null ]; then
-    rm -f /dev/null
-    mknod -m 666 /dev/null c 1 3
-fi
-
 export GIT_COMMIT=$(git log -1 --oneline 2> /dev/null | awk '{print $1}')
 if [ -z ${GIT_COMMIT} ]; then
     # Not a git repo, no way determine latest usobuilder image.  Always remove before builing.
