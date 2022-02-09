@@ -1176,6 +1176,7 @@ genProfileUsbBoot() {
                 cp -r /usr/share/syslinux/efi64/syslinux.efi /mnt/EFI/BOOT/BOOTX64.EFI && \
                 cp ${tmp_path}/syslinux.cfg /mnt/EFI/BOOT/syslinux.cfg && \
                 umount /mnt && \
+                sync && \
                 partx -d \${TEMP_IMG_DEV} && \
                 losetup -d \${TEMP_IMG_DEV} && \
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
@@ -1195,6 +1196,7 @@ genProfileUsbBoot() {
                 cp /usr/share/syslinux/*.c32 /mnt/ && \
                 cp ${tmp_path}/syslinux.cfg /mnt/syslinux.cfg && \
                 umount /mnt && \
+                sync && \
                 partx -d \${TEMP_IMG_DEV} && \
                 losetup -d \${TEMP_IMG_DEV} && \
                 dd if=/usr/share/syslinux/altmbr.bin bs=439 count=1 conv=notrunc of=/usb/temp.img > /dev/null 2>&1 && \
@@ -1324,6 +1326,7 @@ genAllProfileUsbBoot() {
                 sed -i 's#http://${builder_config_host_ip}/tftp/images/iso/memdisk#/memdisk#g' /mnt/EFI/BOOT/syslinux.cfg && \
                 sed -i 's#http://${builder_config_host_ip}/tftp/images/#/#g' /mnt/EFI/BOOT/syslinux.cfg && \
                 umount /mnt && \
+                sync && \
                 partx -d \${TEMP_IMG_DEV} && \
                 losetup -d \${TEMP_IMG_DEV} && \
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
@@ -1349,6 +1352,7 @@ genAllProfileUsbBoot() {
                 sed -i 's#http://${builder_config_host_ip}/tftp/images/iso/memdisk#/memdisk#g' /mnt/syslinux.cfg && \
                 sed -i 's#http://${builder_config_host_ip}/tftp/images/#/#g' /mnt/syslinux.cfg && \
                 umount /mnt && \
+                sync && \
                 partx -d \${TEMP_IMG_DEV} && \
                 losetup -d \${TEMP_IMG_DEV} && \
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
