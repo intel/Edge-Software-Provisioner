@@ -453,7 +453,7 @@ processBuild() {
             sleep 0.5; \
             if [ $i -eq 20 ]; then docker restart build-docker; fi; \
             if [ $i -eq 40 ]; then docker restart build-docker; fi; \
-            if [ $i -eq 60 ]; then echo 'build-docker will not start.  Please review docker logs build-docker.  Run this build again will sometimes fix the problem.'; false; exit; fi; \
+            if [ $i -eq 60 ]; then echo 'build-docker will not start.  Please review docker logs build-docker.  Run this build again will sometimes fix the problem.'; else; exit 1; fi; \
         done; \
         echo 'ready' && \
         docker run --rm --privileged --name ${container_name} ${DOCKER_RUN_ARGS} --env DOCKER_RUN_ARGS='${DOCKER_RUN_ARGS//\'/}' --env DOCKER_BUILD_ARGS='${DOCKER_BUILD_ARGS//\'/}' ${ENTRYPOINT_CLI} \
