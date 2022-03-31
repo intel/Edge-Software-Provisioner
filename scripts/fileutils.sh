@@ -423,7 +423,6 @@ processBuild() {
     local profile_name=$4
     # local container_name=$( echo "builder_$profile_name" | sed -r 's#[:/]#-#g')
     local container_name="build"
-    local i=0
 
     mkdir -p ${WEB_FILES}/${profile_name}/build
     mkdir -p ${EMBEDDED_FILES}/${profile_name}
@@ -442,21 +441,17 @@ processBuild() {
 
     local message="  Running Build process, this could take a very long time.  In another terminal run 'docker logs ${container_name} -f' to watch progress."
     run "${message}" \
-        "docker rm -f build-docker > /dev/null 2>&1; \
-        docker run -d --privileged --name build-docker ${DOCKER_RUN_ARGS} -v $(pwd)/data/tmp/build:/var/run -v $(pwd)/data/lib/docker:/var/lib/docker docker:19.03.12-dind && \
-        sleep 7 && docker restart build-docker && \
+        "docker run -d --rm --privileged --name build-docker ${DOCKER_RUN_ARGS} -v $(pwd)/data/tmp/build:/var/run -v $(pwd)/data/lib/docker:/var/lib/docker docker:19.03.12-dind && \
+        sleep 7 && \
         echo 'Waiting for Docker'; \
-        i=0; \
-        while (! docker -H unix:///$(pwd)/data/tmp/build/docker.sock ps ); do 
-            i=$((i+1)); \
-            echo -n '.'; \
-            sleep 0.5; \
-            if [ $i -eq 20 ]; then docker restart build-docker; fi; \
-            if [ $i -eq 40 ]; then docker restart build-docker; fi; \
-            if [ $i -eq 60 ]; then echo 'build-docker will not start.  Please review docker logs build-docker.  Run this build again will sometimes fix the problem.'; else; exit 1; fi; \
-        done; \
+        if ! docker -H unix:///$(pwd)/data/tmp/build/docker.sock ps > /dev/null ; then
+            echo the build-docker failed. please docker system prune and retry; \
+            docker rm -f -v build-docker > /dev/null 2>&1; \
+            rm -f $(pwd)/data/tmp/build/docker/containerd/containerd.pid; \
+            exit 1; \
+        fi; \
         echo 'ready' && \
-        docker run --rm --privileged --name ${container_name} ${DOCKER_RUN_ARGS} --env DOCKER_RUN_ARGS='${DOCKER_RUN_ARGS//\'/}' --env DOCKER_BUILD_ARGS='${DOCKER_BUILD_ARGS//\'/}' ${ENTRYPOINT_CLI} \
+        docker run --rm --privileged --name ${container_name} ${DOCKER_RUN_ARGS} --env DOCKER_RUN_ARGS --env DOCKER_BUILD_ARGS ${ENTRYPOINT_CLI} \
             -v /run/docker.sock:/opt/run/sys.sock \
             -v $(pwd)/data/tmp/build:/var/run \
             -v $(pwd)/data/persist:/opt/persist \
@@ -466,8 +461,9 @@ processBuild() {
             -v ${EMBEDDED_FILES}/${profile_name}:/opt/embedded \
             ${container} ${cmd}; \
         echo 'Finished with build, Cleaning up build docker container...'; \
-        docker rm -f build-docker > /dev/null 2>&1 || true; \
-        docker rm -f ${container_name} > /dev/null 2>&1|| true" \
+        docker rm -f -v build-docker > /dev/null 2>&1; \
+        docker rm -f -v ${container_name} > /dev/null 2>&1; \
+        rm -f $(pwd)/data/tmp/build/docker/containerd/containerd.pid" \
         ${LOG_FILE}
 }
 
