@@ -931,9 +931,9 @@ genProfileVirtualPxeBoot() {
 
     logMsg "Booting ${name} profile with Virtual PXE."
 
-    logMsg "Running command: docker run -it --rm --privileged --net=host --cap-add=ALL --name=builder-vpxe -v /dev:/dev -v /run:/run -v $(pwd)/output/${name}:/data:shared -e RAM=${MEMORY} -e CPU='host' -e SMP=4,sockets=1,cores=4,threads=1 -e NAME=vpxe -e DISK_DEVICE=\"-drive file=/data/vdisk.${DISK_FORMAT},format=${DISK_FORMAT},index=0,media=disk\" -e IMAGE_FORMAT=${DISK_FORMAT} -e IMAGE=/data/vdisk.${DISK_FORMAT} -e IMAGE_SIZE=${DISK_SIZE}G -e IMAGE_CREATE=1 -e VIDEO=none -e BIOS=${BIOS} -e ADD_FLAGS=\"-kernel /data/uos-kernel -initrd /data/uos-initrd.img -append '${KERNEL_PARAMS}'\" -e USB_HUB=none builder-qemu"
+    logMsg "Running command: docker run -t --rm --privileged --net=host --cap-add=ALL --name=builder-vpxe -v /dev:/dev -v /run:/run -v $(pwd)/output/${name}:/data:shared -e RAM=${MEMORY} -e CPU='host' -e SMP=4,sockets=1,cores=4,threads=1 -e NAME=vpxe -e DISK_DEVICE=\"-drive file=/data/vdisk.${DISK_FORMAT},format=${DISK_FORMAT},index=0,media=disk\" -e IMAGE_FORMAT=${DISK_FORMAT} -e IMAGE=/data/vdisk.${DISK_FORMAT} -e IMAGE_SIZE=${DISK_SIZE}G -e IMAGE_CREATE=1 -e VIDEO=none -e BIOS=${BIOS} -e ADD_FLAGS=\"-kernel /data/uos-kernel -initrd /data/uos-initrd.img -append '${KERNEL_PARAMS}'\" -e USB_HUB=none builder-qemu"
 
-    docker run -it --rm --privileged --net=host --cap-add=ALL --name=builder-vpxe -v /dev:/dev -v /run:/run -v $(pwd)/output/${name}:/data:shared -e RAM=${MEMORY} -e CPU='host' -e SMP=4,sockets=1,cores=4,threads=1 -e NAME=vpxe -e DISK_DEVICE="-drive file=/data/vdisk.${DISK_FORMAT},format=${DISK_FORMAT},index=0,media=disk" -e IMAGE_FORMAT=${DISK_FORMAT} -e IMAGE=/data/vdisk.${DISK_FORMAT} -e IMAGE_SIZE=${DISK_SIZE}G -e IMAGE_CREATE=1 -e VIDEO=none -e BIOS=${BIOS} -e ADD_FLAGS="-kernel /data/uos-kernel -initrd /data/uos-initrd.img -append '${KERNEL_PARAMS}'" -e USB_HUB=none builder-qemu
+    docker run -t --rm --privileged --net=host --cap-add=ALL --name=builder-vpxe -v /dev:/dev -v /run:/run -v $(pwd)/output/${name}:/data:shared -e RAM=${MEMORY} -e CPU='host' -e SMP=4,sockets=1,cores=4,threads=1 -e NAME=vpxe -e DISK_DEVICE="-drive file=/data/vdisk.${DISK_FORMAT},format=${DISK_FORMAT},index=0,media=disk" -e IMAGE_FORMAT=${DISK_FORMAT} -e IMAGE=/data/vdisk.${DISK_FORMAT} -e IMAGE_SIZE=${DISK_SIZE}G -e IMAGE_CREATE=1 -e VIDEO=none -e BIOS=${BIOS} -e ADD_FLAGS="-kernel /data/uos-kernel -initrd /data/uos-initrd.img -append '${KERNEL_PARAMS}'" -e USB_HUB=none builder-qemu
 
     rm ./output/${name}/uos-cmdline ./output/${name}/uos-kernel ./output/${name}/uos-initrd.img
     sleep 2
@@ -1160,7 +1160,7 @@ genProfileUsbBoot() {
         printDatedMsg "Building bootable USB stick for ${name} profile."
         logMsg "Building bootable USB stick for ${name} profile."
         if [ "${USB_BIOS}" == "efi" ]; then
-            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb alpine sh -c "apk add util-linux syslinux coreutils parted rsync e2fsprogs > /dev/null && \
+            docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb alpine sh -c "apk add util-linux syslinux coreutils parted rsync e2fsprogs > /dev/null && \
                 IMG_SIZE=\$((${KERNEL_SIZE} + ${INITRD_SiZE} + 52428800)) && \
                 truncate --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
@@ -1182,7 +1182,7 @@ genProfileUsbBoot() {
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
             umount /dev/console
         else
-            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb alpine sh -c "apk add util-linux syslinux coreutils parted rsync e2fsprogs e2fsprogs-extra > /dev/null && \
+            docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb alpine sh -c "apk add util-linux syslinux coreutils parted rsync e2fsprogs e2fsprogs-extra > /dev/null && \
                 IMG_SIZE=\$((${KERNEL_SIZE} + ${INITRD_SiZE} + 52428800)) && \
                 truncate --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
@@ -1214,8 +1214,8 @@ genProfileUsbBoot() {
     USB_IMG_SIZE=$(du -b ${usb_path}/${name}/${IMG_NAME}.img | awk '{print $1}')
 
     if [ "${USB_DEV}" != "" ]; then
-        logMsg "docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb alpine sh -c \"apk add pv coreutils bash findutils lsblk > /dev/null && cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}\""
-        docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb alpine sh -c "apk add pv coreutils bash findutils lsblk > /dev/null && cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}"
+        logMsg "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb alpine sh -c \"apk add pv coreutils bash findutils lsblk > /dev/null && cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}\""
+        docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb alpine sh -c "apk add pv coreutils bash findutils lsblk > /dev/null && cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}"
     else
         printMsg ""
         printMsg "Use the following command to flash the img to the USB Device."
@@ -1305,7 +1305,7 @@ genAllProfileUsbBoot() {
         printDatedMsg "Building bootable USB stick for ${name} profiles."
         logMsg "Building bootable USB stick for ${name} profiles."
         if [ "${USB_BIOS}" == "efi" ]; then
-            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb alpine sh -c "apk add util-linux syslinux coreutils parted rsync e2fsprogs > /dev/null && \
+            docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb alpine sh -c "apk add util-linux syslinux coreutils parted rsync e2fsprogs > /dev/null && \
                 IMG_SIZE=\$((${USB_IMG_SIZE} + ${BOOT_IMAGES_SiZE} + 52428800)) && \
                 truncate --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
@@ -1332,7 +1332,7 @@ genAllProfileUsbBoot() {
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
             umount /dev/console
         else
-            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb alpine sh -c "apk add util-linux syslinux coreutils parted rsync e2fsprogs e2fsprogs-extra > /dev/null && \
+            docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb alpine sh -c "apk add util-linux syslinux coreutils parted rsync e2fsprogs e2fsprogs-extra > /dev/null && \
                 IMG_SIZE=\$((${USB_IMG_SIZE} + ${BOOT_IMAGES_SiZE} + 52428800)) && \
                 truncate --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
@@ -1364,8 +1364,8 @@ genAllProfileUsbBoot() {
 
     if [ "${USB_DEV}" != "" ]; then
 
-        logMsg "docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb alpine sh -c \"apk add pv coreutils bash findutils lsblk > /dev/null && cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}\""
-        docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb alpine sh -c "apk add pv coreutils bash findutils lsblk > /dev/null && cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}"
+        logMsg "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb alpine sh -c \"apk add pv coreutils bash findutils lsblk > /dev/null && cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}\""
+        docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb alpine sh -c "apk add pv coreutils bash findutils lsblk > /dev/null && cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}"
     else
         printMsg ""
         printMsg "Use the following command to flash the img to the USB Device."
