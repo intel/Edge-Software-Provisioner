@@ -63,11 +63,12 @@ if [[ "${DOWN}" == "true" ]]; then
         docker-compose down
     fi
     PWD=$(pwd)
-    umount template/pxe_bg.png >/dev/null 2>&1
-    umount data/srv/tftp/images >/dev/null 2>&1
-    umount data/srv/tftp/pxelinux.cfg >/dev/null 2>&1
-    umount data/srv/tftp/pxelinux.cfg_legacy >/dev/null 2>&1
-    umount data/usr/share/nginx/html/tftp >/dev/null 2>&1
+    umount template/pxe_bg.png -l >/dev/null 2>&1
+    umount data/srv/tftp/images -l >/dev/null 2>&1
+    umount data/srv/tftp/pxelinux.cfg -l >/dev/null 2>&1
+    umount data/srv/tftp/pxelinux.cfg_legacy -l >/dev/null 2>&1
+    umount data/usr/share/nginx/html/tftp -l >/dev/null 2>&1
+    sync >/dev/null 2>&1
     exit
 fi
 
@@ -90,11 +91,12 @@ else
             docker-compose down
         fi
         PWD=$(pwd)
-        umount template/pxe_bg.png >/dev/null 2>&1
-        umount data/srv/tftp/images >/dev/null 2>&1
-        umount data/srv/tftp/pxelinux.cfg >/dev/null 2>&1
-        umount data/srv/tftp/pxelinux.cfg_legacy >/dev/null 2>&1
-        umount data/usr/share/nginx/html/tftp >/dev/null 2>&1
+        umount template/pxe_bg.png -l >/dev/null 2>&1
+        umount data/srv/tftp/images -l >/dev/null 2>&1
+        umount data/srv/tftp/pxelinux.cfg -l >/dev/null 2>&1
+        umount data/srv/tftp/pxelinux.cfg_legacy -l >/dev/null 2>&1
+        umount data/usr/share/nginx/html/tftp -l >/dev/null 2>&1
+        sync >/dev/null 2>&1
     fi
 
     if [[ "${NO_DNSMASQ}" == "false" ]]; then
