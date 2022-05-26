@@ -1,0 +1,36 @@
+# Copyright (C) 2020 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM alpine:3.12 as kernel-builder
+LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>, , jianlin zhang <jianlin.zhang@intel.com>"
+
+ARG UBUNTU_RELEASE=4.4.0-98-generic
+ARG FIRMWARE=1.197.5_all 
+
+RUN apk update && apk add --no-cache \
+		bash \
+		wget \
+		tar \
+		rpm \
+		cpio \
+		binutils \
+		xz
+
+WORKDIR /build
+RUN mkdir /out
+
+# List of kernels
+#  wget -qO - https://mirrors.kernel.org/ubuntu/pool/main/l/linux/ | sed -n 's/.*href="\([^"]*\).*/\1/p' | grep -o "linux-image-unsigned-[0-9]\.[0-9]\+\.[0-9]\+-[0-9]\+-generic_[^ ]\+amd64\.deb"
+# https://mirrors.edge.kernel.org/ubuntu/pool/main/l/linux-firmware/linux-firmware_1.197_all.deb
+
+RUN wget https://mirrors.edge.kernel.org/ubuntu/pool/main/l/linux-firmware/linux-firmware_${FIRMWARE}.deb
+
+RUN ar x linux-firmware_${FIRMWARE}.deb && \
+		tar -xf data.tar.xz && \
+		mv ./lib /out/
+
+FROM scratch
+ENTRYPOINT []
+CMD []
+WORKDIR /
+COPY --from=kernel-builder /out/* /
