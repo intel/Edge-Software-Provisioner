@@ -1,14 +1,15 @@
 # Copyright (C) 2021 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM alpine:3.12
+FROM alpine:3.14
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-RUN apk update && apk add --no-cache \
+RUN apk --no-cache add \
       samba-common-tools \
       samba-client \
       samba-server \
-      tini
+      tini && \
+    apk --no-cache -U upgrade
 
 RUN mkdir /smbshare && \
     chmod 777 /smbshare

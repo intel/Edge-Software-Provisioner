@@ -218,7 +218,7 @@ pullProfile() {
             logInfoMsg "No Git authentication method found (git_username/git_token, or SSH-Agent)."
         fi
         run "  ${C_GREEN}${name}${T_RESET}: Pulling latest from ${git_branch_name} on repo ${git_remote_url}" \
-            "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/${name}:/tmp/profiles/${name} -w /tmp/profiles/${name} builder-git sh -c 'git fetch origin ${git_branch_name} && git reset --hard origin/${git_branch_name} && git pull origin ${git_branch_name}'" \
+            "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/${name}:/tmp/profiles/${name} -w /tmp/profiles/${name} builder-git sh -c 'git fetch origin ${git_branch_name} && git reset --hard ${git_branch_name} && git pull origin ${git_branch_name}'" \
             ${LOG_FILE}
     else
         printDatedErrMsg "Profile ${name} either is improperly configured or does not exist."
@@ -251,7 +251,7 @@ pullProfile() {
                 logInfoMsg "Pull - No Git authentication method found (git_username/git_token, or SSH-Agent)."
             fi
             run "  ${C_GREEN}${base_name}${T_RESET}: Pulling latest from ${git_base_branch_name} on repo ${git_remote_url}" \
-                "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles/${base_name} -w /tmp/profiles/${base_name} builder-git sh -c 'git fetch origin ${git_base_branch_name} && git reset --hard origin/${git_base_branch_name} && git pull origin ${git_base_branch_name}'" \
+                "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles/${base_name} -w /tmp/profiles/${base_name} builder-git sh -c 'git fetch origin ${git_base_branch_name} && git reset --hard ${git_base_branch_name} && git pull origin ${git_base_branch_name}'" \
                 ${LOG_FILE}
         else
             printDatedErrMsg "Profile ${base_name} either is improperly configured or does not exist."
@@ -417,7 +417,7 @@ buildProfile() {
         local message="  Running Build process, this could take a very long time.  In another terminal run 'docker logs ${container_name} -f' to watch progress."
         run "${message}" \
             "docker rm -f builder-docker > /dev/null 2>&1; \
-            docker run -t --rm --privileged --name ${container_name} --entrypoint= -v /var/run:/var/run -v /tmp:/tmp -v $(pwd)/data/persist:/opt/persist ${BASE_BIND} -v ${WEB_PROFILE}/${profile_name}:${WEB_PROFILE}/${profile_name} -v ${WEB_FILES}/${profile_name}:${WEB_FILES}/${profile_name} docker:19.03.12 sh -c 'apk add bash rsync git coreutils; ${WEB_PROFILE}/${profile_name}/build.sh ${WEB_PROFILE}/${profile_name} ${WEB_FILES}/${profile_name}'; \
+            docker run -t --rm --privileged --name ${container_name} ${DOCKER_RUN_ARGS} --entrypoint= -v /var/run:/var/run -v /tmp:/tmp -v $(pwd)/data/persist:/opt/persist ${BASE_BIND} -v ${WEB_PROFILE}/${profile_name}:${WEB_PROFILE}/${profile_name} -v ${WEB_FILES}/${profile_name}:${WEB_FILES}/${profile_name} docker:19.03.12 sh -c 'apk add bash rsync git coreutils; ${WEB_PROFILE}/${profile_name}/build.sh ${WEB_PROFILE}/${profile_name} ${WEB_FILES}/${profile_name}'; \
             echo 'Finished with build, Cleaning up builder docker container...'; \
             docker rm -f builder-docker > /dev/null 2>&1 || true; \
             docker rm -f ${container_name} > /dev/null 2>&1|| true" \
@@ -1124,7 +1124,7 @@ genProfileUsbBoot() {
                 mkdir -p ${TFTP_IMAGES}/uos/usb/${name}
                 message="Embedding files into uOS for ${name}."
                 run "${message}" \
-                    "docker run --rm --privileged --name esp_embedding \
+                    "docker run --rm --privileged ${DOCKER_RUN_ARGS} --name esp_embedding \
                         -v ${TFTP_IMAGES}/uos/usb:/opt/images:shared \
                         -v ${WEB_PROFILE}/${name}/embedded:/opt/profile_embedded:ro \
                         -v ${EMBEDDED_FILES}/${name}:/opt/embedded:ro \
@@ -1176,6 +1176,7 @@ genProfileUsbBoot() {
                 cp -r /usr/share/syslinux/efi64/syslinux.efi /mnt/EFI/BOOT/BOOTX64.EFI && \
                 cp ${tmp_path}/syslinux.cfg /mnt/EFI/BOOT/syslinux.cfg && \
                 umount /mnt && \
+                sync && \
                 partx -d \${TEMP_IMG_DEV} && \
                 losetup -d \${TEMP_IMG_DEV} && \
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
@@ -1195,6 +1196,7 @@ genProfileUsbBoot() {
                 cp /usr/share/syslinux/*.c32 /mnt/ && \
                 cp ${tmp_path}/syslinux.cfg /mnt/syslinux.cfg && \
                 umount /mnt && \
+                sync && \
                 partx -d \${TEMP_IMG_DEV} && \
                 losetup -d \${TEMP_IMG_DEV} && \
                 dd if=/usr/share/syslinux/altmbr.bin bs=439 count=1 conv=notrunc of=/usb/temp.img > /dev/null 2>&1 && \
@@ -1279,7 +1281,7 @@ genAllProfileUsbBoot() {
                 mkdir -p ${TFTP_IMAGES}/uos/usb/${profile_name}
                 message="Embedding files into uOS for ${profile_name}."
                 run "${message}" \
-                    "docker run --rm --privileged --name esp_embedding \
+                    "docker run --rm --privileged ${DOCKER_RUN_ARGS} --name esp_embedding \
                         -v ${TFTP_IMAGES}/uos/usb:/opt/images:shared \
                         -v ${WEB_PROFILE}/${profile_name}/embedded:/opt/profile_embedded:ro \
                         -v ${EMBEDDED_FILES}/${profile_name}:/opt/embedded:ro \
@@ -1324,6 +1326,7 @@ genAllProfileUsbBoot() {
                 sed -i 's#http://${builder_config_host_ip}/tftp/images/iso/memdisk#/memdisk#g' /mnt/EFI/BOOT/syslinux.cfg && \
                 sed -i 's#http://${builder_config_host_ip}/tftp/images/#/#g' /mnt/EFI/BOOT/syslinux.cfg && \
                 umount /mnt && \
+                sync && \
                 partx -d \${TEMP_IMG_DEV} && \
                 losetup -d \${TEMP_IMG_DEV} && \
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
@@ -1349,6 +1352,7 @@ genAllProfileUsbBoot() {
                 sed -i 's#http://${builder_config_host_ip}/tftp/images/iso/memdisk#/memdisk#g' /mnt/syslinux.cfg && \
                 sed -i 's#http://${builder_config_host_ip}/tftp/images/#/#g' /mnt/syslinux.cfg && \
                 umount /mnt && \
+                sync && \
                 partx -d \${TEMP_IMG_DEV} && \
                 losetup -d \${TEMP_IMG_DEV} && \
                 mv /usb/temp.img /usb/${IMG_NAME}.img"

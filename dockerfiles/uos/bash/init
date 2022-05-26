@@ -19,7 +19,6 @@ else
 	# reboot
 fi
 
-
 if [[ $kernel_params = *"httpserver="* ]]; then
 	tmp="${kernel_params##*httpserver=}"
 	param_httpserver="${tmp%% *}"
@@ -29,6 +28,18 @@ else
 	echo "[            ] 'httpserver' kernel parameter missing!" 2>&1 | tee -a ${CONSOLE_OUTPUT}
 	sleep 30
 	# reboot
+fi
+
+if [[ $kernel_params = *"proxy="* ]]; then
+  tmp="${kernel_params##*proxy=}"
+  param_proxy="${tmp%% *}"
+
+  export http_proxy=${param_proxy}
+  export https_proxy=${param_proxy}
+  export no_proxy="localhost,127.0.0.1,${param_httpserver}"
+  export HTTP_PROXY=${param_proxy}
+  export HTTPS_PROXY=${param_proxy}
+  export NO_PROXY="localhost,127.0.0.1,${param_httpserver}"
 fi
 
 if [[ $kernel_params = *"token="* ]]; then

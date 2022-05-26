@@ -4,8 +4,8 @@
 FROM alpine:3.12 as kernel-builder
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-ARG UBUNTU_RELEASE=5.8.0-42-generic
-ARG FIRMWARE=1.190.5_all
+ARG UBUNTU_RELEASE=5.8.0-56-generic
+ARG FIRMWARE=1.190.6_all
 
 RUN apk update && apk add --no-cache \
 		bash \
@@ -26,7 +26,7 @@ RUN mkdir /out
 RUN wget https://mirrors.edge.kernel.org/ubuntu/pool/main/l/linux-firmware/linux-firmware_${FIRMWARE}.deb
 
 RUN ar x linux-firmware_${FIRMWARE}.deb && \
-		tar -zxf data.tar.gz && \
+		tar -xf data.tar.xz && \
 		mv ./lib /out/
 
 FROM scratch

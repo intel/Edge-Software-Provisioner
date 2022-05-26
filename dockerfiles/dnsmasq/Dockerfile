@@ -1,14 +1,15 @@
 # Copyright (C) 2019 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM alpine:3.12 as pxeFileProvider64
+FROM alpine:3.14 as pxeFileProvider64
 RUN apk --no-cache add syslinux
 
-FROM alpine:3.12 as pxeFileProvider32
+FROM alpine:3.14 as pxeFileProvider32
 RUN echo "x86" > /etc/apk/arch && apk --no-cache add syslinux
 
-FROM alpine:3.12
-RUN apk --no-cache add dnsmasq nmap nmap-scripts wget \
+FROM alpine:3.14
+RUN apk --no-cache add dnsmasq nmap nmap-scripts wget && \
+    apk --no-cache -U upgrade \
     && mkdir -p /srv/tftp/efi64 \
     && mkdir -p /srv/tftp/efi32 \
     && mkdir -p /srv/tftp/legacy

@@ -4,7 +4,7 @@
 FROM docker:20.10.2-dind
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-RUN apk update && apk add --no-cache \
+RUN apk --no-cache add \
     bash \
     ca-certificates \
     coreutils \
@@ -41,7 +41,8 @@ RUN apk update && apk add --no-cache \
     util-linux \
     wget \
     wireless-tools \
-    xz
+    xz && \
+    apk --no-cache -U upgrade
 
 RUN echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
 

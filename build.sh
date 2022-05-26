@@ -10,6 +10,13 @@ if [[ $(id -u) -ne 0 ]]; then
     exit 1
 fi
 
+# /dev/null is sometimes being deleted by a bug in Docker
+# Verify /dev/null exists and is a character device file. If not, (re-)create it
+if [ ! -c /dev/null ]; then
+    rm -f /dev/null
+    mknod -m 666 /dev/null c 1 3
+fi
+
 # If running from within container change to builder directory
 if [ "${BUILDER_PATH:=}" != "" ]; then
     cd ${BUILDER_PATH}
@@ -26,7 +33,7 @@ printHelp() {
     printMsg "  ${T_BOLD}-s${T_RESET}, --skip-build-uos       Skips building the Micro Operating System (uOS)"
     printMsg "  ${T_BOLD}-S${T_RESET}, --skip-image-builds    Skips building all images and uOS"
     printMsg "  ${T_BOLD}-e${T_RESET}, --skip-image-embedded  Skips embedding custom files into uOS"
-    printMsg "  ${T_BOLD}-k${T_RESET}, --uos-kernel           Valid input value is [ clearlinux | fedora | alpine ].  Defaults to 'clearlinux'."
+    printMsg "  ${T_BOLD}-k${T_RESET}, --uos-kernel           Valid input value is [ clearlinux | fedora | alpine | ubuntu ].  Defaults to 'clearlinux'."
     printMsg "  ${T_BOLD}-c${T_RESET}, --clean-uos            will clean the intermediary docker images used during building of uOS"
     printMsg "  ${T_BOLD}-b${T_RESET}, --skip-backups         Skips the creation of backup files inside the data directory when re-running build.sh"
     printMsg "  ${T_BOLD}-l${T_RESET}, --profile              Synchronize a specific profile and skip all others"
@@ -204,10 +211,21 @@ elif [ "${HTTP_PROXY+x}" = "" ] && [ "${http_proxy+x}" != "" ]; then
         export HTTPS_PROXY=${http_proxy}
     fi
 fi
+
+if [ "${NO_PROXY+x}" != "" ] && [ "${no_proxy+x}" = "" ]; then
+    export no_proxy=${NO_PROXY}
+elif [ "${NO_PROXY+x}" = "" ] && [ "${no_proxy+x}" != "" ]; then
+    export NO_PROXY=${no_proxy}
+#none of NO_PROXY or no_proxy is set, so set both to default values
+elif [ "${NO_PROXY+x}" = ""  ] && [ "${no_proxy+x}" = "" ]; then
+    export NO_PROXY='localhost,127.0.0.1'
+    export no_proxy='localhost,127.0.0.1'
+fi
+
 if [ "${HTTP_PROXY+x}" != "" ]; then
-    export DOCKER_BUILD_ARGS="--build-arg http_proxy='${http_proxy}' --build-arg https_proxy='${https_proxy}' --build-arg HTTP_PROXY='${HTTP_PROXY}' --build-arg HTTPS_PROXY='${HTTPS_PROXY}' --build-arg NO_PROXY='localhost,127.0.0.1'"
-    export DOCKER_RUN_ARGS="--env http_proxy='${http_proxy}' --env https_proxy='${https_proxy}' --env HTTP_PROXY='${HTTP_PROXY}' --env HTTPS_PROXY='${HTTPS_PROXY}' --env NO_PROXY='localhost,127.0.0.1'"
-    export AWS_CLI_PROXY="export http_proxy='${http_proxy}'; export https_proxy='${https_proxy}'; export HTTP_PROXY='${HTTP_PROXY}'; export HTTPS_PROXY='${HTTPS_PROXY}'; export NO_PROXY='localhost,127.0.0.1';"
+    export DOCKER_BUILD_ARGS="--build-arg http_proxy='${http_proxy}' --build-arg https_proxy='${https_proxy}' --build-arg HTTP_PROXY='${HTTP_PROXY}' --build-arg HTTPS_PROXY='${HTTPS_PROXY}' --build-arg NO_PROXY='${NO_PROXY}' --build-arg no_proxy='${no_proxy}'"
+    export DOCKER_RUN_ARGS="--env http_proxy='${http_proxy}' --env https_proxy='${https_proxy}' --env HTTP_PROXY='${HTTP_PROXY}' --env HTTPS_PROXY='${HTTPS_PROXY}' --env NO_PROXY='${NO_PROXY}' --env no_proxy='${no_proxy}'"
+    export AWS_CLI_PROXY="export http_proxy='${http_proxy}'; export https_proxy='${https_proxy}'; export HTTP_PROXY='${HTTP_PROXY}'; export HTTPS_PROXY='${HTTPS_PROXY}'; export NO_PROXY='${NO_PROXY}'; export no_proxy='${no_proxy}' "
 else
     export DOCKER_BUILD_ARGS=""
     export DOCKER_RUN_ARGS=""
