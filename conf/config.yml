@@ -58,3 +58,12 @@ profiles:
     # This is the name that will be shown on the PXE menu (NOTE: No Spaces)
     name: Ubuntu_20.04_Desktop
     custom_git_arguments: --depth=1
+
+# Before using local profile, please git init ./localprofiles
+  - git_remote_url: file:///opt/localprofiles/.git
+    profile_branch: main
+    profile_base_branch: main
+    git_username: ""
+    git_token: ""
+    name: Ubuntu_20.04
+    custom_git_arguments: --depth=1
