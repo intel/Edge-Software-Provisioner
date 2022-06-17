@@ -7,22 +7,57 @@
 # three octets (x.x.x.1) by inspecting an arbitrary outbound IP route.
 # This default behavior may not work if your network
 # is not a /24, so make sure to specify here if needed.
+
 # dhcp_range_minimum: 192.168.1.100
 # dhcp_range_maximum: 192.168.1.250
 # network_broadcast_ip: 192.168.1.255
 # network_gateway_ip: 192.168.1.1
 
-# If omitted, this is automatically determined
+# If omitted, host_ip is automatically determined
+
 # host_ip: 192.168.1.11
 
 # If omitted, defaults to 8.8.8.8
 # Note that the primary DNS is always host_ip
+
 # network_dns_primary: 8.8.4.4
 # network_dns_secondary: 8.8.8.8
+
+# Let's Encrypt Certificates TLS for Web Services
+# letsencrypt_enabled: true
+# letsencrypt_email: email@example.com
+# This specifies that you agree to ACME’s Subscriber Agreement.
+# letsencrypt_agree_to: true
+# This tells Certbot that you do not wish to share your email with the Electronic Frontier Foundation (EFF).
+# letsencrypt_no_eff_email: true
+# This tells Certbot that you would like to use Let’s Encrypt’s staging environment to obtain test certificates.
+# letsencrypt_staging: false
+
+# If ommited, the default ethernet interface is used.
+# BE AWARE: ESP will set up a dnsmasq service. Any other dnsmasq service have
+#           to be stopped or bound to a different device as the one you
+#           configure below.
+#           Alternativly, you can use iptables to address this as well. That is 
+#           out of scope for this application
+
+# interface: enp2s0
+
+# This section is used to enable dynamic profile association. Please read the instructions on
+# how to use here: https://github.com/intel/Edge-Software-Provisioner#dynamic-profile
+# You can modify the file conf/dynamic_profiles.json or place this on github location.  After 
+# pxe boot, the ESP uOS will get the desired parameters from the hardware, send it back to the 
+# builder-dyn-profile service, which will then provide the desired profile location
+
+# dynamic_profile:
+#   enabled: true
+#   url: ""
+#   user: ""
+#   token: ""
 
 # Please make sure to define ALL of the variables below, even if they
 # are empty. Otherwise, this application will not be configured properly.
 profiles:
+
   - git_remote_url: https://github.com/intel/rni-profile-base-clearlinux.git
     profile_branch: slim
     profile_base_branch: master

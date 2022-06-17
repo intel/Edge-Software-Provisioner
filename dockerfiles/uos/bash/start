@@ -12,8 +12,17 @@ export CONSOLE_OUTPUT="/dev/console"
 
 sleep 3
 
+kernel_params=$(cat /proc/cmdline)
+
+if [[ $kernel_params == *" ntp="* ]]; then
+  tmp="${kernel_params##* ntp=}"
+  export param_ntp="${tmp%% *}"
+else
+  export param_ntp="us.pool.ntp.org"
+fi
+
 echo "[            ] Updating system time..." 2>&1 | tee -a ${CONSOLE_OUTPUT}
-ntpd -d -N -q -n -p us.pool.ntp.org 2>&1 | tee -a ${CONSOLE_OUTPUT}
+ntpd -d -N -q -n -p ${param_ntp} 2>&1 | tee -a ${CONSOLE_OUTPUT}
 
 echo "[            ] Discovering hardware..." 2>&1 | tee -a ${CONSOLE_OUTPUT}
 for f in $(ls /sys/bus/*/devices/*/modalias); do
@@ -30,7 +39,6 @@ for f in $(ls /sys/bus/*/devices/*/modalias); do
   fi
 done
 
-kernel_params=$(cat /proc/cmdline)
 if [[ $kernel_params = *"httpserver="* ]]; then
   tmp="${kernel_params##*httpserver=}"
   param_httpserver="${tmp%% *}"
@@ -46,6 +54,18 @@ if [[ $kernel_params = *"proxy="* ]]; then
   export HTTP_PROXY=${param_proxy}
   export HTTPS_PROXY=${param_proxy}
   export NO_PROXY="localhost,127.0.0.1,${param_httpserver}"
+fi
+
+if [[ $kernel_params = *" dynamicprofile="* ]]; then
+  tmp="${kernel_params##* dynamicprofile=}"
+  export param_dynamicprofile="${tmp%% *}"
+fi
+
+echo "[            ] Cmdline: $kernel_params" 2>&1 | tee -a ${CONSOLE_OUTPUT}
+
+if [[ $param_dynamicprofile == 'true' ]]; then
+  echo "[            ] DYNAMIC PROFILE ACTIVE!! Collecting hardware information" 2>&1 | tee -a ${CONSOLE_OUTPUT}
+  /opt/bootstrap/profile_request
 fi
 
 iptables -L  >/dev/null 2>&1

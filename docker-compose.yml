@@ -263,3 +263,24 @@ services:
       options:
         max-file: "5"
         max-size: "1m"
+
+  dyn-profile:
+    image: builder-dyn-profile
+    ports:
+      - 8580:8080
+    depends_on:
+      - web
+    volumes:
+      - ./conf:/conf:shared
+      - ./data/dyn-profile:/data
+    environment:
+      - host_ip=${HOST_IP:-}
+      - dyn_url=${DYN_URL:-}
+      - dyn_url_user=${DYN_URL_USER:-}
+      - dyn_url_token=${DYN_URL_TOKEN:-}
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
+      - no_proxy=${no_proxy:-}
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-}

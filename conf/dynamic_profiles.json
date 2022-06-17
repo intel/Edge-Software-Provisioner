@@ -1,0 +1,14 @@
+{
+  "hardwares": [
+   {
+     "id": "1",
+     "mac": "AA:BB:CC:11:22:33",
+     "profile": "Ubuntu_20.04"
+   },
+   {
+     "id": "2",
+     "cpu": "Intel(R) Xeon(R) CPU D-1557",
+     "profile": "Ubuntu_20.04_Desktop"
+   }
+  ]
+}

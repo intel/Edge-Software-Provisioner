@@ -34,6 +34,8 @@ To quickly get started follow the [Quick Installation Guide](#quick-installation
 
 1. [Bootable USB](#bootable-usb)
 
+1. [Dynamic Profile](#dynamic-profile)
+
 ## What is it?
 
 The Edge Software Provisioner (ESP) enables ODMs, System Integrators and Developers to automate the installation of a complete operating system and software stack (defined by a Profile) on bare-metal or virtual machines using a "Just-in-Time" provisiong process. The software stack can include software components, middleware, firmware, and applications.  Automating this process increases velocity by focusing resources on rapid development, validation of use cases and scalable deployment.  ESP simplifies customer adoption through confidence gained validating Profiles.  Profiles are cloned and distributed through GitHub containing the human readable prescriptive literature to deploy the complete operating system and software stack.  In summary, this a scalable, simple bare metal provisioning process including virtual machine provisioning.
@@ -268,6 +270,7 @@ The following kernel parameters can be added to `conf/config.yml`
 * `bootstrap` - RESERVED, do not change
 * `ubuntuversion` - Use the Ubuntu release name. Defaults to 'cosmic' release
 * `debug` - [TRUE | FALSE] Enables a more verbose output
+* `resume` - [TRUE | FALSE] Enables the profile to resume opperation after the last fail.  Useful for developing profiles
 * `httppath` - RESERVED, do not change
 * `kernparam` - Used to pass additional kernel parameters to the targeted system.  Example format: kernparam=splash:quiet#enable_gvt:1
 * `parttype` - RESERVED, do not change
@@ -466,6 +469,68 @@ under [Installation](#installation)
   ```
 
   Type `./makeusb.sh -h` to see othe syntax options.
+
+## Dynamic Profile
+
+### Scope
+
+The Dynamic Profile feature allows ESP to install software on a target system without using ESP Menu selection on systems without a monitor or scale production.
+
+### Profile selection
+
+A json file in the following format is used to associate a profile with either the hardware mac address of at least one of the ethernets or cpu type on the target system.  An example json file can be found at `conf/dynamic_profiles.json`, edit this file or place the file on github or http server.
+Example JSON File:
+
+```json
+{
+  "hardwares": [
+   {
+     "id": "1",
+     "mac": "AA:BB:CC:11:22:33",
+     "profile": "Ubuntu_21.04"
+   },
+   {
+     "id": "2",
+     "cpu": "Intel(R) Xeon(R) CPU D-1557",
+     "profile": "Ubuntu_20.04_Desktop"
+   }
+  ]
+}
+```
+
+**IMPORTANT: The json structure has to follow the structure above. The current implementation relies on these keys. The implemented hardware related information is "macaddress". If others are desired, the implementation needs to be adapted**
+
+### Enabling the Dynamic Profile
+
+Several things need to be done to enable the Dynamic Profile
+
+#### Adapting config.yml
+ In the config.yml, the following section must be present:
+
+ ```yaml
+ dynamic_profile:
+    enabled: true
+    url: "https://###SOME_URL###/dynamic_profiles.json" or leave blank to read from conf/dynamic_profiles.json
+    user: "###USE_IF_HOSTED_ON_GITHUB###" or leave blank
+    token: "###USE_IF_HOSTED_ON_GITHUB###" or leave blank
+
+ ```
+ #### Building and running ESP with Dynamic Profile
+ If building for the first time please use the following command
+ ```
+ ./build.sh
+ ```
+ Or if you have already built images you use the following command to update configuration
+ ```
+ ./build.sh -S -P
+ ```
+ 
+ you must run is ESP in dynamic mode in order to support the feature with the following command
+ ```
+ ./run.sh
+ ```
+ 
+ 
 
 ## Known Limitations
 

@@ -102,6 +102,7 @@ if [[ "${UP}" == "true" ]] || [[ "${RESTART}" == "true" ]]; then
   mkdir -p ./data/certbot/www
   mkdir -p ./data/certbot/conf
   mkdir -p ./data/certbot/lib
+  mkdir -p ./data/dyn-profile
   mkdir -p ./data/usr/share/nginx/html/smb
   mkdir -p ./output
 fi
@@ -131,6 +132,9 @@ if [[ "${DOWN}" == "true" ]]; then
   if docker ps -a | grep ${CURDIR}_certbot_1 > /dev/null; then
     podman rm ${CURDIR}_certbot_1 -f
   fi
+  if docker ps -a | grep ${CURDIR}_dyn-profile_1 > /dev/null; then
+    podman rm ${CURDIR}_dyn-profile_1 -f
+  fi
   umount template/pxe_bg.png >/dev/null 2>&1
   umount data/srv/tftp/images >/dev/null 2>&1
   umount data/srv/tftp/pxelinux.cfg >/dev/null 2>&1
@@ -150,6 +154,7 @@ if [[ "${RESTART}" == "true" ]]; then
   podman restart ${CURDIR}_mirror_1 2> /dev/null
   podman restart ${CURDIR}_smb_1 2> /dev/null
   podman restart ${CURDIR}_certbot_1 2> /dev/null
+  podman restart ${CURDIR}_dyn-profile_1 2> /dev/null
 fi
 
 if [[ "${UP}" == "true" ]]; then
@@ -200,6 +205,12 @@ if [[ "${UP}" == "true" ]]; then
       podman run -d --privileged --name=${CURDIR}_certbot_1 --restart=on-failure -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} --mount type=bind,source=${PWD}/./conf,destination=/opt/esp/conf --mount type=bind,source=${PWD}/./data/certbot/conf,destination=/etc/letsencrypt --mount type=bind,source=${PWD}/./data/certbot/www,destination=/var/www/certbot --mount type=bind,source=${PWD}/./data/certbot/lib,destination=/var/lib/letsencrypt --mount type=bind,source=${PWD}/./data/etc/ssl/private,destination=/etc/ssl/private --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/web-cert,destination=/etc/ssl/cert builder-certbot 
     fi
   fi
+
+  if ! docker ps -a | grep ${CURDIR}_dyn-profile_1 > /dev/null; then
+    if [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "dyn-profile" ]; then
+      podman run -d --privileged --name=${CURDIR}_dyn-profile_1 --restart=always -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} -e host_ip=${HOST_IP:-} -e dyn_url=${DYN_URL:-} -e dyn_url_user=${DYN_URL_USER:-} -e dyn_url_token=${DYN_URL_TOKEN:-} --mount type=bind,source=${PWD}/./conf,destination=${PWD}/conf,bind-propagation=shared --mount type=bind,source=${PWD}/./data/dyn-profile,destination=/data builder-dyn-profile 
+    fi
+  fi
 fi
 
 if [[ "${LOGS}" == "true" ]]; then
@@ -227,6 +238,9 @@ if [[ "${LOGS}" == "true" ]]; then
   fi
   if docker ps -a | grep ${CURDIR}_certbot_1 > /dev/null; then
     SERVICES="${CURDIR}_certbot_1 $SERVICES"
+  fi
+  if docker ps -a | grep ${CURDIR}_dyn-profile_1 > /dev/null; then
+    SERVICES="${CURDIR}_dyn-profile_1 $SERVICES"
   fi
 
   if [ "${SERVICES}" != "" ]; then

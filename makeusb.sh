@@ -22,6 +22,10 @@ source "scripts/profileutils.sh"
 source "scripts/pxemenuutils.sh"
 source "scripts/templateutils.sh"
 
+if [ -f ".env" ]; then
+    source ".env"
+fi
+
 printHelp() {
     printMsg "\n Main ${T_BOLD}${C_BLUE}Make USB Script${T_RESET}"
     printMsg " You can specify one the following options:"

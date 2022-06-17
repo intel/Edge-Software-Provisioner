@@ -33,7 +33,7 @@ printHelp() {
     printMsg "  ${T_BOLD}-s${T_RESET}, --skip-build-uos       Skips building the Micro Operating System (uOS)"
     printMsg "  ${T_BOLD}-S${T_RESET}, --skip-image-builds    Skips building all images and uOS"
     printMsg "  ${T_BOLD}-e${T_RESET}, --skip-image-embedded  Skips embedding custom files into uOS"
-    printMsg "  ${T_BOLD}-k${T_RESET}, --uos-kernel           Valid input value is [ clearlinux | fedora | alpine | ubuntu ].  Defaults to 'clearlinux'."
+    printMsg "  ${T_BOLD}-k${T_RESET}, --uos-kernel           Valid input value is [ intel | intel.signed | clearlinux | ubuntu | ubuntu.signed | fedora | redhat | alpine ].  Defaults to 'intel'. 'redhat' requires a licensed rhel system."
     printMsg "  ${T_BOLD}-c${T_RESET}, --clean-uos            will clean the intermediary docker images used during building of uOS"
     printMsg "  ${T_BOLD}-b${T_RESET}, --skip-backups         Skips the creation of backup files inside the data directory when re-running build.sh"
     printMsg "  ${T_BOLD}-l${T_RESET}, --profile              Synchronize a specific profile and skip all others"
@@ -50,7 +50,7 @@ printHelp() {
 export UOS_CLEAN="false"
 export BUILD_UOS="true"
 export BUILD_IMAGES="true"
-export UOS_KERNEL="clearlinux"
+export UOS_KERNEL="intel"
 export SKIP_FILES="false"
 export SKIP_BACKUPS="false"
 export SKIP_PROFILES="false"
@@ -61,6 +61,8 @@ export BOOT_PROFILE=""
 export FROM_CONTAINER="false"
 export TAG=""
 export PUSH=""
+export DYNAMIC_PROFILE="false"
+export ENV_FILE=".env"
 while (( "$#" )); do
     case "$1" in
         "-c" | "--clean-uos"           )    export UOS_CLEAN="true"
@@ -95,7 +97,7 @@ while (( "$#" )); do
         "--"                           )    # end argument parsing
                                             shift
                                             break;;
-        -* | --*=                      )    # unsupported flags
+        -*                             )    # unsupported flags
                                             echo "Error: Unsupported flag $1" >&2
                                             exit 1;;
         *                              )    # preserve positional arguments
@@ -114,10 +116,25 @@ logMsg "----------------------------------"
 logMsg " Welcome to the host build script"
 logMsg "----------------------------------"
 
+if [ -f /etc/redhat-release ]; then
+    if ! (podman -v >/dev/null 2>&1); then
+        printErrMsg "  'podman' command is missing. Please install podman - 'yum install podman'"
+        exit
+    fi
+elif ! (docker -v >/dev/null 2>&1); then
+    printErrMsg "  'docker' command is missing. Please install docker."
+    exit
+fi
+
+if [ "${UOS_KERNEL}" == "redhat" ] && [ ! -f /etc/redhat-release ]; then
+    printErrMsg "  Building a Red Hat Kernel for uOS requires to be executed from a licensed Red Hat system."
+    exit
+fi
+
 if [[ "${TAG}" != "" ]]; then
     export BUILD_IMAGES="false"
     export SKIP_PROFILES="true"
-    if (docker images | grep builder-core  > /dev/null 2>&1); then
+    if (docker images | grep builder-core >/dev/null 2>&1); then
         printBanner "Retagging container images..."
         logMsg "Retagging container images..."
         mkdir -p output
@@ -148,7 +165,7 @@ fi
 if [[ "${PUSH}" != "" ]]; then
     export BUILD_IMAGES="false"
     export SKIP_PROFILES="true"
-    if (docker images | grep ${PUSH}/builder-core > /dev/null 2>&1); then
+    if (docker images | grep ${PUSH}/builder-core >/dev/null 2>&1); then
         printBanner "Pushing container images. (NOTE: run 'docker login' first if login required otherwise this command will fail.)"
         logMsg "Pushing container images..."
         for image in $(docker images | grep ${PUSH}/builder- | grep -v none | awk '{print $1}'); do 
@@ -177,10 +194,10 @@ if [ -f conf/.build.lock ]; then
     docker logs $(docker ps | grep builder-core | awk '{print $1}') | tail -10
     printMsg ""
 
-    read -p "  Would you like to remove the lock file 'conf/.build.lock'? [y/n]: " answer
+    read -r -p "  Would you like to remove the lock file 'conf/.build.lock'? [y/n]: " answer
     validateInput custom "${answer}" "Please enter 'y' or 'n': ${answer}" "^(y|n)$"
 
-    if [ ${answer} = "y" ]; then
+    if [ "${answer}" = "y" ]; then
         rm conf/.build.lock
     else
         exit
@@ -188,38 +205,76 @@ if [ -f conf/.build.lock ]; then
 fi
 touch conf/.build.lock
 
+# Always delete env file when building. It wil be re-created during build
+if [ -f ${ENV_FILE} ]; then
+    rm ${ENV_FILE}
+fi
+
 # Parse the config before doing anything else
 printBanner "Checking ${C_GREEN} Config..."
 logMsg "Checking Config..."
 parseConfig
+logMsg "Parsing Secrets..."
+source "scripts/secretconfig.sh"
+getSecretInfo
 
 source "scripts/templateutils.sh"
 
+if [[ ! -z "${builder_config_dynamic_profile_enabled+x}" ]];then
+    if [[ "${builder_config_dynamic_profile_enabled}" == "true" ]]; then
+        export DYNAMIC_PROFILE="true"
+    fi
+fi
+
 # Incorporate proxy preferences
-if [ "${HTTP_PROXY+x}" != "" ] && [ "${http_proxy+x}" = "" ]; then
+if [ "${HTTP_PROXY+x}" != "" ] && [ "${http_proxy+x}" == "" ]; then
     export http_proxy=${HTTP_PROXY}
     if [ "${HTTPS_PROXY+x}" != "" ]; then
         export https_proxy=${HTTPS_PROXY}
     else
         export https_proxy=${HTTP_PROXY}
+        export HTTPS_PROXY=${http_proxy}
     fi
-elif [ "${HTTP_PROXY+x}" = "" ] && [ "${http_proxy+x}" != "" ]; then
+elif [ "${HTTP_PROXY+x}" == "" ] && [ "${http_proxy+x}" != "" ]; then
     export HTTP_PROXY=${http_proxy}
     if [ "${https_proxy+x}" != "" ]; then
         export HTTPS_PROXY=${https_proxy}
     else
         export HTTPS_PROXY=${http_proxy}
+        export https_proxy=${http_proxy}
     fi
 fi
 
-if [ "${NO_PROXY+x}" != "" ] && [ "${no_proxy+x}" = "" ]; then
+if [ "${NO_PROXY+x}" != "" ] && [ "${no_proxy+x}" == "" ]; then
     export no_proxy=${NO_PROXY}
-elif [ "${NO_PROXY+x}" = "" ] && [ "${no_proxy+x}" != "" ]; then
+elif [ "${NO_PROXY+x}" == "" ] && [ "${no_proxy+x}" != "" ]; then
     export NO_PROXY=${no_proxy}
 #none of NO_PROXY or no_proxy is set, so set both to default values
-elif [ "${NO_PROXY+x}" = ""  ] && [ "${no_proxy+x}" = "" ]; then
+elif [ "${NO_PROXY+x}" == "" ] && [ "${no_proxy+x}" == "" ] && [ "${HTTP_PROXY+x}" != "" ]; then
+    printDatedMsg "${T_INFO_ICON} no_proxy not set, using default: localhost,127.0.0.1"
+    logMsg "no_proxy not set, using default: localhost,127.0.0.1"
     export NO_PROXY='localhost,127.0.0.1'
     export no_proxy='localhost,127.0.0.1'
+fi
+
+# Creating the environment file for the docker-compose
+if [ "${HTTP_PROXY+x}" != "" ]; then
+    echo "HTTP_PROXY=${HTTP_PROXY}" >>${ENV_FILE}
+fi
+if [ "${HTTPS_PROXY+x}" != "" ]; then
+    echo "HTTPS_PROXY=${HTTPS_PROXY}" >>${ENV_FILE}
+fi
+if [ "${http_proxy+x}" != "" ]; then
+    echo "http_proxy=${http_proxy}" >>${ENV_FILE}
+fi
+if [ "${https_proxy+x}" != "" ]; then
+    echo "https_proxy=${https_proxy}" >>${ENV_FILE}
+fi
+if [ "${NO_PROXY+x}" != "" ]; then
+    echo "NO_PROXY=${NO_PROXY}" >>${ENV_FILE}
+fi
+if [ "${no_proxy+x}" != "" ]; then
+    echo "no_proxy=${no_proxy}" >>${ENV_FILE}
 fi
 
 if [ "${HTTP_PROXY+x}" != "" ]; then
@@ -230,6 +285,18 @@ else
     export DOCKER_BUILD_ARGS=""
     export DOCKER_RUN_ARGS=""
     export AWS_CLI_PROXY=""
+fi
+
+if [ -d "data/usr/share/nginx/html/" ]; then
+# Ensure previously mounted ISO images are properly unmounted
+# for being able to detach the used loop device.
+iso_images=$(find data/usr/share/nginx/html/ -iname '*.iso')
+for iso_image in ${iso_images[@]}; do
+    if mount | grep ${iso_image} >/dev/null 2>&1; then
+        logMsg "umount ${iso_image}"
+        umount ${iso_image}
+    fi
+done
 fi
 
 # Build Micro OS, if desired
@@ -249,52 +316,52 @@ if [[ "${BUILD_IMAGES}" == "true" ]]; then
     # reduces the footprint of our application
 
     # Build the aws-cli image
-    run "(1/11) Building builder-aws-cli" \
+    run "(1/12) Building builder-aws-cli" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-aws-cli dockerfiles/aws-cli" \
         ${LOG_FILE}
 
     # Build the wget image
-    run "(2/11) Building builder-wget" \
+    run "(2/12) Building builder-wget" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-wget dockerfiles/wget" \
         ${LOG_FILE}
 
     # Build the git image
-    run "(3/11) Building builder-git" \
+    run "(3/12) Building builder-git" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-git dockerfiles/git" \
         ${LOG_FILE}
 
     # Build the dnsmasq image
-    run "(4/11) Building builder-dnsmasq (~10 min)" \
+    run "(4/12) Building builder-dnsmasq (~10 min)" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-dnsmasq dockerfiles/dnsmasq" \
         ${LOG_FILE}
 
     # Build the squid image
-    run "(5/11) Building builder-squid" \
+    run "(5/12) Building builder-squid" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-squid dockerfiles/squid" \
         ${LOG_FILE}
 
     # Build the web image
-    run "(6/11) Building builder-web" \
+    run "(6/12) Building builder-web" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-web dockerfiles/nginx" \
         ${LOG_FILE}
 
     # Build the gitea image
-    run "(7/11) Building builder-gitea" \
+    run "(7/12) Building builder-gitea" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-gitea dockerfiles/gitea" \
         ${LOG_FILE}
 
     # Build the qemu image
-    run "(8/11) Building builder-qemu" \
+    run "(8/12) Building builder-qemu" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-qemu dockerfiles/qemu" \
         ${LOG_FILE}
 
     # Build the smb image
-    run "(9/11) Building builder-smb" \
+    run "(9/12) Building builder-smb" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-smb dockerfiles/smb" \
         ${LOG_FILE}
 
     # Build the core image
-    run "(10/11) Building builder-core" \
+    run "(10/12) Building builder-core" \
         "docker run -t --rm ${DOCKER_RUN_ARGS} --privileged -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
         cd /work && \
         mkdir -p dockerfiles/core/files/conf/ && \
@@ -310,11 +377,16 @@ if [[ "${BUILD_IMAGES}" == "true" ]]; then
         ${LOG_FILE}
 
     # Build the certbot image
-    run "(11/11) Building builder-certbot" \
+    run "(11/12) Building builder-certbot" \
         "docker run -t --rm ${DOCKER_RUN_ARGS} --privileged -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
         cd /work && \
         rsync -rtc ./scripts ./dockerfiles/certbot/'; \
         docker build --rm ${DOCKER_BUILD_ARGS} -t builder-certbot dockerfiles/certbot" \
+        ${LOG_FILE}
+
+    # Build the dynamic profile image
+    run "(12/12) Building dynamic profile service" \
+        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-dyn-profile dockerfiles/dyn-profile" \
         ${LOG_FILE}
 
 else
@@ -352,17 +424,24 @@ fi
 printBanner "Rendering ${C_GREEN}System Templates..."
 logMsg "Rendering System Templates..."
 
-# Begin the process of generating a temporary
-# pxelinux.cfg/default file
-printBanner "Generating ${C_GREEN}PXE Menu..."
-logMsg "Generating PXE Menu..."
-genPxeMenuHead
-profilesActions genProfilePxeMenu
-genPxeMenuTail
+if [[ "${DYNAMIC_PROFILE}" == "false" ]]; then
+  # Begin the process of generating a temporary
+  # pxelinux.cfg/default file
+  printBanner "Generating ${C_GREEN}PXE Menu..."
+  logMsg "Generating PXE Menu..."
+  genPxeMenuHead
+  profilesActions genProfilePxeMenu
+  genPxeMenuTail
 
-renderSystemNetworkTemplates
-updatePxeMenu
-
+  renderSystemNetworkTemplates
+  updatePxeMenu
+else
+  source "scripts/dynamicprofile.sh"
+  logMsg "Setting up DynamicProfile without PXE boot menu..."
+  renderSystemNetworkTemplates
+  setDynamicProfileArgs
+  exportProfileInfo
+fi
 # Finishing message
 printBanner "${C_GREEN}Build Complete!"
 logOkMsg "Build Complete!"
@@ -373,4 +452,4 @@ if [[ "${FROM_CONTAINER}" == "false" ]]; then
 fi
 
 # Remove build lock
-rm conf/.build.lock 2> /dev/null
+rm conf/.build.lock 2>/dev/null

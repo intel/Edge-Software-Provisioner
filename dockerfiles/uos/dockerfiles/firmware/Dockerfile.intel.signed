@@ -4,7 +4,6 @@
 FROM alpine:3.12 as kernel-builder
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-ARG UBUNTU_RELEASE=5.15.0-23-generic
 ARG FIRMWARE=1.201.5_all
 
 RUN apk update && apk add --no-cache \

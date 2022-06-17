@@ -1,7 +1,7 @@
 # Copyright (C) 2020 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM docker:20.10.2-dind
+FROM docker:20.10.12-dind
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
 RUN apk --no-cache add \
@@ -10,6 +10,7 @@ RUN apk --no-cache add \
     coreutils \
     cpio \
     cryptsetup \
+    curl \
     dmidecode \
     e2fsprogs \
     e2fsprogs-extra \
@@ -30,6 +31,7 @@ RUN apk --no-cache add \
     ntfs-3g \
     openssh-client \
     openssl \
+    partx \
     parted \
     pciutils \
     py3-pip \
@@ -50,6 +52,7 @@ RUN mkdir -p /opt/bootstrap
 COPY bash/init /opt/bootstrap/
 COPY bash/functions /opt/bootstrap/
 COPY bash/start /opt/bootstrap/
+COPY bash/profile_request /opt/bootstrap/
 COPY bash/wifi-scan /opt/bootstrap/
 ENTRYPOINT []
 CMD ["/bin/bash","/opt/bootstrap/start"]

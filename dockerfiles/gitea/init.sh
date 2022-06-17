@@ -3,9 +3,10 @@
 # Copyright (C) 2019 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-if (cat /data/gitea/conf/app.ini | grep INSTALL_LOCK | grep true 2>&1 > /dev/null ); then
+if [ -f /data/gitea/conf/app.ini ] && (cat /data/gitea/conf/app.ini | grep INSTALL_LOCK | grep true 2>&1 > /dev/null ); then
   echo "GitTea already configured"
 else
+  echo "configuring GitTea"
   /usr/bin/entrypoint &
   sleep 5
   gitea manager shutdown

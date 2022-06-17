@@ -417,13 +417,13 @@ buildProfile() {
         local message="  Running Build process, this could take a very long time.  In another terminal run 'docker logs ${container_name} -f' to watch progress."
         run "${message}" \
             "docker rm -f builder-docker > /dev/null 2>&1; \
-            docker run -t --rm --privileged --name ${container_name} ${DOCKER_RUN_ARGS} --entrypoint= -v /var/run:/var/run -v /tmp:/tmp -v $(pwd)/data/persist:/opt/persist ${BASE_BIND} -v ${WEB_PROFILE}/${profile_name}:${WEB_PROFILE}/${profile_name} -v ${WEB_FILES}/${profile_name}:${WEB_FILES}/${profile_name} docker:19.03.12 sh -c 'apk add bash rsync git coreutils; ${WEB_PROFILE}/${profile_name}/build.sh ${WEB_PROFILE}/${profile_name} ${WEB_FILES}/${profile_name}'; \
+            docker run -t --rm --privileged --name ${container_name} ${DOCKER_RUN_ARGS} --entrypoint= -v /var/run:/var/run -v /tmp:/tmp -v $(pwd)/data/persist:/opt/persist ${BASE_BIND} -v ${WEB_PROFILE}/${profile_name}:${WEB_PROFILE}/${profile_name} -v ${WEB_FILES}/${profile_name}:${WEB_FILES}/${profile_name} docker:20.10.12-dind sh -c 'apk add bash rsync git coreutils; ${WEB_PROFILE}/${profile_name}/build.sh ${WEB_PROFILE}/${profile_name} ${WEB_FILES}/${profile_name}'; \
             echo 'Finished with build, Cleaning up builder docker container...'; \
             docker rm -f builder-docker > /dev/null 2>&1 || true; \
             docker rm -f ${container_name} > /dev/null 2>&1|| true" \
             ${LOG_FILE}
 
-            # docker run -d --privileged --name builder-docker ${DOCKER_RUN_ARGS} -v $(pwd)/data/tmp/builder:/var/run -v $(pwd)/data/lib/docker:/var/lib/docker docker:19.03.12-dind && \
+            # docker run -d --privileged --name builder-docker ${DOCKER_RUN_ARGS} -v $(pwd)/data/tmp/builder:/var/run -v $(pwd)/data/lib/docker:/var/lib/docker docker:20.10.12-dind  && \
             # echo 'Waiting for Docker'; \
             # while (! docker -H unix:///$(pwd)/data/tmp/builder/docker.sock ps > /dev/null 2>&1); do echo -n '.'; sleep 0.5; done; echo 'ready' && \
 
@@ -659,6 +659,7 @@ genProfilePxeMenu() {
 
     local kernelArgs=""
     local proxyArgs=""
+    local noproxyArgs=""
     local ttyArg="console=tty0"
     local httpserverArg="httpserver=@@HOST_IP@@"
     local bootstrapArg="bootstrap=http://@@HOST_IP@@/profile/${name}/bootstrap.sh"
@@ -681,11 +682,21 @@ genProfilePxeMenu() {
             proxyArgs="proxy=${HTTP_PROXY}"
         fi
     fi
+    if [ ! -z "${NO_PROXY+x}" ] || [ ! -z "${no_proxy+x}" ]; then
+        if [ ! -z "${NO_PROXY+x}" ]; then
+            noproxyArgs="noproxy=${NO_PROXY}"
+        else
+            noproxyArgs="noproxy=${no_proxy}"
+        fi
+    fi
     if [ ! -z "${FTP_PROXY+x}" ]; then
         proxyArgs="${proxyArgs} proxysocks=${FTP_PROXY}"
     fi
     if [ ! -z "${proxyArgs}" ]; then
         kernelArgs="${kernelArgs} ${proxyArgs}"
+    fi
+    if [ ! -z "${noproxyArgs}" ]; then
+        kernelArgs="${kernelArgs} ${noproxyArgs}"
     fi
 
     # If kernel & initrd are both specified in the profile's files.yml,
@@ -842,6 +853,7 @@ genProfileVirtualPxeBoot() {
     
     local kernelArgs=""
     local proxyArgs=""
+    local noproxyArgs=""
     local ttyArg="console=ttyS0"
     local httpserverArg="httpserver=@@HOST_IP@@"
     local bootstrapArg="bootstrap=http://@@HOST_IP@@/profile/${name}/bootstrap.sh"
@@ -863,11 +875,21 @@ genProfileVirtualPxeBoot() {
             proxyArgs="proxy=${HTTP_PROXY}"
         fi
     fi
+    if [ ! -z "${NO_PROXY+x}" ] || [ ! -z "${no_proxy+x}" ]; then
+        if [ ! -z "${NO_PROXY+x}" ]; then
+            noproxyArgs="noproxy=${NO_PROXY}"
+        else
+            noproxyArgs="noproxy=${no_proxy}"
+        fi
+    fi
     if [ ! -z "${FTP_PROXY+x}" ]; then
         proxyArgs="${proxyArgs} proxysocks=${FTP_PROXY}"
     fi
     if [ ! -z "${proxyArgs}" ]; then
         kernelArgs="${kernelArgs} ${proxyArgs}"
+    fi
+        if [ ! -z "${noproxyArgs}" ]; then
+        kernelArgs="${kernelArgs} ${noproxyArgs}"
     fi
 
     # If kernel & initrd are both specified in the profile's files.yml,
@@ -902,12 +924,15 @@ genProfileVirtualPxeBoot() {
 
     # addLineToVirtualPxeMenu "\"    APPEND ${kernelArgs}\""
 
+    IMAGE_CREATE=1
     if [ -f ./output/${name}/vdisk.${DISK_FORMAT} ]; then
-        read -p "  Virtual disk './output/${name}/vdisk.${DISK_FORMAT}' already exists. Would you like to continue and overwrite? [y/n]: " answer
-        validateInput custom "${answer}" "Please enter 'y' or 'n': ${answer}" "^(y|n)$"
+        read -p "  Virtual disk './output/${name}/vdisk.${DISK_FORMAT}' already exists. Would you like to continue and overwrite (y), exit (n) or reuse (r) ? [y/n/r]: " answer
+        validateInput custom "${answer}" "Please enter 'y', 'n' or 'r': ${answer}" "^(y|n|r)$"
 
         if [ ${answer} = "y" ]; then
             rm ./output/${name}/vdisk.${DISK_FORMAT}
+        elif [ ${answer} = "r" ]; then
+            IMAGE_CREATE=0
         else
             exit
         fi
@@ -931,9 +956,9 @@ genProfileVirtualPxeBoot() {
 
     logMsg "Booting ${name} profile with Virtual PXE."
 
-    logMsg "Running command: docker run -it --rm --privileged --net=host --cap-add=ALL --name=builder-vpxe -v /dev:/dev -v /run:/run -v $(pwd)/output/${name}:/data:shared -e RAM=${MEMORY} -e CPU='host' -e SMP=4,sockets=1,cores=4,threads=1 -e NAME=vpxe -e DISK_DEVICE=\"-drive file=/data/vdisk.${DISK_FORMAT},format=${DISK_FORMAT},index=0,media=disk\" -e IMAGE_FORMAT=${DISK_FORMAT} -e IMAGE=/data/vdisk.${DISK_FORMAT} -e IMAGE_SIZE=${DISK_SIZE}G -e IMAGE_CREATE=1 -e VIDEO=none -e BIOS=${BIOS} -e ADD_FLAGS=\"-kernel /data/uos-kernel -initrd /data/uos-initrd.img -append '${KERNEL_PARAMS}'\" -e USB_HUB=none builder-qemu"
+    logMsg "Running command: docker run -it --rm --privileged --net=host --cap-add=ALL --name=builder-vpxe -v /dev:/dev -v /run:/run -v $(pwd)/output/${name}:/data:shared -e RAM=${MEMORY} -e CPU='host' -e SMP=4,sockets=1,cores=4,threads=1 -e NAME=vpxe -e DISK_DEVICE=\"-drive file=/data/vdisk.${DISK_FORMAT},format=${DISK_FORMAT},index=0,media=disk\" -e IMAGE_FORMAT=${DISK_FORMAT} -e IMAGE=/data/vdisk.${DISK_FORMAT} -e IMAGE_SIZE=${DISK_SIZE}G -e IMAGE_CREATE=${IMAGE_CREATE} -e VIDEO=none -e BIOS=${BIOS} -e ADD_FLAGS=\"-kernel /data/uos-kernel -initrd /data/uos-initrd.img -append '${KERNEL_PARAMS}'\" -e USB_HUB=none builder-qemu"
 
-    docker run -it --rm --privileged --net=host --cap-add=ALL --name=builder-vpxe -v /dev:/dev -v /run:/run -v $(pwd)/output/${name}:/data:shared -e RAM=${MEMORY} -e CPU='host' -e SMP=4,sockets=1,cores=4,threads=1 -e NAME=vpxe -e DISK_DEVICE="-drive file=/data/vdisk.${DISK_FORMAT},format=${DISK_FORMAT},index=0,media=disk" -e IMAGE_FORMAT=${DISK_FORMAT} -e IMAGE=/data/vdisk.${DISK_FORMAT} -e IMAGE_SIZE=${DISK_SIZE}G -e IMAGE_CREATE=1 -e VIDEO=none -e BIOS=${BIOS} -e ADD_FLAGS="-kernel /data/uos-kernel -initrd /data/uos-initrd.img -append '${KERNEL_PARAMS}'" -e USB_HUB=none builder-qemu
+    docker run -it --rm --privileged --net=host --cap-add=ALL --name=builder-vpxe -v /dev:/dev -v /run:/run -v $(pwd)/output/${name}:/data:shared -e RAM=${MEMORY} -e CPU='host' -e SMP=4,sockets=1,cores=4,threads=1 -e NAME=vpxe -e DISK_DEVICE="-drive file=/data/vdisk.${DISK_FORMAT},format=${DISK_FORMAT},index=0,media=disk" -e IMAGE_FORMAT=${DISK_FORMAT} -e IMAGE=/data/vdisk.${DISK_FORMAT} -e IMAGE_SIZE=${DISK_SIZE}G -e IMAGE_CREATE=${IMAGE_CREATE} -e VIDEO=none -e BIOS=${BIOS} -e ADD_FLAGS="-kernel /data/uos-kernel -initrd /data/uos-initrd.img -append '${KERNEL_PARAMS}'" -e USB_HUB=none -e NETWORK_DEVICE=e1000e builder-qemu
 
     rm ./output/${name}/uos-cmdline ./output/${name}/uos-kernel ./output/${name}/uos-initrd.img
     sleep 2
@@ -967,6 +992,28 @@ genProfileVirtualPxeBoot() {
     fi
 }
 
+genOfflineImage() {
+    printDatedMsg "Checking if there is an offline version of alpine"
+    logMsg "Checking if there is an offline version of alpine"
+    OFFLINE_ALPINE="alpine-offline"
+
+    IS_OFFLINE_ALPINE_AVAILABLE=$(docker images | grep $OFFLINE_ALPINE > /dev/null ;if [ $? -eq 0 ] ; then echo yes ; else echo no ; fi)
+
+    if [ "$IS_OFFLINE_ALPINE_AVAILABLE" == "no" ]; then
+        printDatedMsg "- Offline image [${C_RED}Unavailable${T_RESET}]"
+        logMsg "- Offline image [Unavailable]"
+        run "Creating an offline alpine Image alpine-offline" \
+            "docker run --name alpine_container --privileged ${DOCKER_RUN_ARGS} alpine sh -c \"apk update > /dev/null &&  \
+            apk add util-linux syslinux coreutils parted rsync e2fsprogs pv coreutils bash findutils lsblk gzip cpio > /dev/null \" && \
+            docker commit alpine_container $OFFLINE_ALPINE > /dev/null && docker rm -v alpine_container > /dev/null" \
+            ${LOG_FILE}
+    else
+        printDatedMsg "- Offline image [${C_GREEN}Available${T_RESET}]"
+        logMsg "- Offline image [Available]"
+    fi
+}
+
+
 genProfileUsbBoot() {
     # Not all of these arguments may be used by this function, but this
     # follows a consistent format. See the "profilesActions" function
@@ -999,6 +1046,7 @@ genProfileUsbBoot() {
    
     local kernelArgs=""
     local proxyArgs=""
+    local noproxyArgs=""
     local ttyArg="console=ttyS0"
     local httpserverArg="httpserver=@@HOST_IP@@"
     local bootstrapArg="bootstrap=http://@@HOST_IP@@/profile/${name}/bootstrap.sh"
@@ -1020,8 +1068,18 @@ genProfileUsbBoot() {
             proxyArgs="proxy=${HTTP_PROXY}"
         fi
     fi
+    if [ ! -z "${NO_PROXY+x}" ] || [ ! -z "${no_proxy+x}" ]; then
+        if [ ! -z "${NO_PROXY+x}" ]; then
+            noproxyArgs="noproxy=${NO_PROXY}"
+        else
+            noproxyArgs="noproxy=${no_proxy}"
+        fi
+    fi
     if [ ! -z "${FTP_PROXY+x}" ]; then
         proxyArgs="${proxyArgs} proxysocks=${FTP_PROXY}"
+    fi
+    if [ ! -z "${noproxyArgs}" ]; then
+        kernelArgs="${kernelArgs} ${noproxyArgs}"
     fi
     if [ ! -z "${proxyArgs}" ]; then
         kernelArgs="${kernelArgs} ${proxyArgs}"
@@ -1070,8 +1128,10 @@ genProfileUsbBoot() {
 
     KERNEL_PARAMS=$(cat ${usb_path}/${name}/uos-cmdline)
 
+    genOfflineImage
+
     if [ "${USB_RANDOM}" == "true" ]; then
-        _uuid=$(docker run alpine sh -c 'apk add util-linux > /dev/null 2>&1 && uuidgen')
+        _uuid=$(docker run $OFFLINE_ALPINE sh -c 'uuidgen')
         IMG_NAME="${_uuid}"
     else
         IMG_NAME="uos-${USB_BIOS}"
@@ -1128,9 +1188,7 @@ genProfileUsbBoot() {
                         -v ${TFTP_IMAGES}/uos/usb:/opt/images:shared \
                         -v ${WEB_PROFILE}/${name}/embedded:/opt/profile_embedded:ro \
                         -v ${EMBEDDED_FILES}/${name}:/opt/embedded:ro \
-                        alpine:3.12 sh -c 'apk update && \
-                            apk add rsync gzip cpio && \
-                            mkdir -p prep/ && \
+                        $OFFLINE_ALPINE sh -c 'mkdir -p prep/ && \
                             cd prep/ && \
                             zcat /opt/images/initrd | cpio -idmu && \
                             rsync -rtc /opt/profile_embedded/ ./ && \
@@ -1160,8 +1218,7 @@ genProfileUsbBoot() {
         printDatedMsg "Building bootable USB stick for ${name} profile."
         logMsg "Building bootable USB stick for ${name} profile."
         if [ "${USB_BIOS}" == "efi" ]; then
-            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb alpine sh -c "apk add util-linux syslinux coreutils parted rsync e2fsprogs > /dev/null && \
-                IMG_SIZE=\$((${KERNEL_SIZE} + ${INITRD_SiZE} + 52428800)) && \
+            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb $OFFLINE_ALPINE sh -c "IMG_SIZE=\$((${KERNEL_SIZE} + ${INITRD_SiZE} + 52428800)) && \
                 truncate --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
                 dd bs=440 count=1 conv=notrunc if=/usr/share/syslinux/gptmbr.bin of=\${TEMP_IMG_DEV} > /dev/null 2>&1 && \
@@ -1182,8 +1239,7 @@ genProfileUsbBoot() {
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
             umount /dev/console
         else
-            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb alpine sh -c "apk add util-linux syslinux coreutils parted rsync e2fsprogs e2fsprogs-extra > /dev/null && \
-                IMG_SIZE=\$((${KERNEL_SIZE} + ${INITRD_SiZE} + 52428800)) && \
+            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb $OFFLINE_ALPINE sh -c "IMG_SIZE=\$((${KERNEL_SIZE} + ${INITRD_SiZE} + 52428800)) && \
                 truncate --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
                 parted --script \${TEMP_IMG_DEV} mklabel msdos mkpart primary fat32 1MiB 100% set 1 boot on && \
@@ -1214,8 +1270,8 @@ genProfileUsbBoot() {
     USB_IMG_SIZE=$(du -b ${usb_path}/${name}/${IMG_NAME}.img | awk '{print $1}')
 
     if [ "${USB_DEV}" != "" ]; then
-        logMsg "docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb alpine sh -c \"apk add pv coreutils bash findutils lsblk > /dev/null && cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}\""
-        docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb alpine sh -c "apk add pv coreutils bash findutils lsblk > /dev/null && cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}"
+        logMsg "docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb $OFFLINE_ALPINE sh -c \"cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}\""
+        docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb $OFFLINE_ALPINE sh -c "cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}"
     else
         printMsg ""
         printMsg "Use the following command to flash the img to the USB Device."
@@ -1227,6 +1283,7 @@ genProfileUsbBoot() {
     logMsg "Completed building bootable USB for ${name} profile."
     printMsg ""
 }
+
 
 genAllProfileUsbBoot() {
     local name="all"
@@ -1243,8 +1300,10 @@ genAllProfileUsbBoot() {
     touch ${TFTP_IMAGES}/uos/usb/uos-cmdline
     # cp ${ymlPath} ${TFTP_IMAGES}/uos/usb/uos.yml
 
+    genOfflineImage
+
     if [ "${USB_RANDOM}" == "true" ]; then
-        _uuid=$(docker run alpine sh -c 'apk add util-linux > /dev/null 2>&1 && uuidgen')
+        _uuid=$(docker run $OFFLINE_ALPINE sh -c 'uuidgen')
         IMG_NAME="${_uuid}"
     else
         IMG_NAME="uos-${USB_BIOS}"
@@ -1276,6 +1335,7 @@ genAllProfileUsbBoot() {
                 mv /uos/uos-wifi-kernel /target/vmlinuz\"" \
             ${LOG_FILE}
 
+
         for profile_name in $(ls ${WEB_PROFILE}/ | grep -v base); do        
             if [ "$(ls -A ${EMBEDDED_FILES}/${profile_name} 2> /dev/null )" ] || [ "$(ls -A ${WEB_PROFILE}/${profile_name}/embedded 2> /dev/null)" ]; then
                 mkdir -p ${TFTP_IMAGES}/uos/usb/${profile_name}
@@ -1285,9 +1345,7 @@ genAllProfileUsbBoot() {
                         -v ${TFTP_IMAGES}/uos/usb:/opt/images:shared \
                         -v ${WEB_PROFILE}/${profile_name}/embedded:/opt/profile_embedded:ro \
                         -v ${EMBEDDED_FILES}/${profile_name}:/opt/embedded:ro \
-                        alpine:3.12 sh -c 'apk update && \
-                            apk add rsync gzip cpio && \
-                            mkdir -p prep/ && \
+                        $OFFLINE_ALPINE sh -c 'mkdir -p prep/ && \
                             cd prep/ && \
                             zcat /opt/images/initrd | cpio -idmu && \
                             rsync -rtc /opt/profile_embedded/ ./ && \
@@ -1302,11 +1360,13 @@ genAllProfileUsbBoot() {
         USB_IMG_SIZE=$(du -bcs ${TFTP_IMAGES}/uos/usb/* | grep total | awk '{print $1}')
         BOOT_IMAGES_SiZE=$(du -bcs --exclude=iso* --exclude=uos* ${img_path}/* | grep total | awk '{print $1}')
 
+
+
         printDatedMsg "Building bootable USB stick for ${name} profiles."
         logMsg "Building bootable USB stick for ${name} profiles."
+
         if [ "${USB_BIOS}" == "efi" ]; then
-            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb alpine sh -c "apk add util-linux syslinux coreutils parted rsync e2fsprogs > /dev/null && \
-                IMG_SIZE=\$((${USB_IMG_SIZE} + ${BOOT_IMAGES_SiZE} + 52428800)) && \
+            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb $OFFLINE_ALPINE sh -c "IMG_SIZE=\$((${USB_IMG_SIZE} + ${BOOT_IMAGES_SiZE} + 52428800)) && \
                 truncate --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
                 dd bs=440 count=1 conv=notrunc if=/usr/share/syslinux/gptmbr.bin of=\${TEMP_IMG_DEV} > /dev/null 2>&1 && \
@@ -1332,8 +1392,7 @@ genAllProfileUsbBoot() {
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
             umount /dev/console
         else
-            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb alpine sh -c "apk add util-linux syslinux coreutils parted rsync e2fsprogs e2fsprogs-extra > /dev/null && \
-                IMG_SIZE=\$((${USB_IMG_SIZE} + ${BOOT_IMAGES_SiZE} + 52428800)) && \
+            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb $(OFFLINE_ALPINE) sh -c "IMG_SIZE=\$((${USB_IMG_SIZE} + ${BOOT_IMAGES_SiZE} + 52428800)) && \
                 truncate --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
                 dd bs=440 count=1 conv=notrunc if=/usr/share/syslinux/mbr.bin of=\${TEMP_IMG_DEV} > /dev/null 2>&1 && \
@@ -1364,8 +1423,8 @@ genAllProfileUsbBoot() {
 
     if [ "${USB_DEV}" != "" ]; then
 
-        logMsg "docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb alpine sh -c \"apk add pv coreutils bash findutils lsblk > /dev/null && cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}\""
-        docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb alpine sh -c "apk add pv coreutils bash findutils lsblk > /dev/null && cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}"
+        logMsg "docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb $(OFFLINE_ALPINE) sh -c \"cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}\""
+        docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb $(OFFLINE_ALPINE) sh -c "cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}"
     else
         printMsg ""
         printMsg "Use the following command to flash the img to the USB Device."
@@ -1412,6 +1471,15 @@ renderProfileTemplates() {
             renderTemplate ${file} ${name}
         fi
     done
+    for file in ${WEB_PROFILE}/${base_name}/**; do
+        if [[ "${file}" == *".buildertemplate" || \
+              "${file}" == *".ebtemplate" || \
+              "${file}" == *".esptemplate" ]]; then
+            logInfoMsg "Found ${file}, will proceed to render it"
+            renderTemplate ${file} ${name}
+        fi
+    done
+
 
     # Unset the variable so it doesn't interfere with anything else.
     shopt -u globstar
@@ -1599,14 +1667,14 @@ syncProfiles() {
 
     profilesActions renderProfileTemplates
 
+    # Now we need to download files associated with the profile
+    profilesActions downloadProfile
+
     if [[ "${SKIP_PROFILE_BUILDS}" == "false" ]]; then
         profilesActions buildProfile
     else
         logMsg "User decided to skip the execution of profile-specific build scripts."
     fi
-
-    # Now we need to download files associated with the profile
-    profilesActions downloadProfile
 }
 
 startGitea() {

@@ -4,9 +4,9 @@
 FROM fedora:32 as kernel-builder
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-ARG KERNEL_VERSION=5.6.6-300.fc32.x86_64
+ARG KERNEL_VERSION=5.17.5-300.fc36.x86_64
 ARG KERNEL_PREFIX
-ARG FEDORA_RELEASE=32
+ARG FEDORA_RELEASE=36
 
 RUN dnf install -y \
     wget \

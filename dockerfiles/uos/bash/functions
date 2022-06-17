@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright (C) 2019 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,34 +16,63 @@ spinner() {
   printf "    \b\b\b\b" 2>&1 | tee -a /dev/console
 }
 
+resumeProfile() {
+  if [ ! -z "${RESUME_PROFILE:+x}" ]; then
+    if [ -f /target/root/tmp/profile_failed_cmd.txt ]; then
+      local profile_cmd=$1
+      local profile_failed_cmd=$(cat /target/root/tmp/profile_failed_cmd.txt)
+      if [ "${profile_cmd}" = "${profile_failed_cmd}" ]; then
+        echo "Retrying failed cmd: ${profile_failed_cmd}" | tee -a /dev/console
+        rm /target/root/tmp/profile_failed_cmd.txt
+        return 0
+      elif [[ ! -z "${RESUME_PROFILE_RUN:+x}" && "${RESUME_PROFILE_RUN[@]}" =~ "${profile_cmd}" ]]; then
+        echo "Run always: ${profile_cmd}" | tee -a /dev/console
+        return 0
+      else
+        echo "Skipping cmd: ${profile_cmd}" | tee -a /dev/console
+        return 1
+      fi
+    else
+      return 0
+    fi
+  else
+    return 0
+  fi
+}
+
 run() {
   local msg=$1
   local runThis=$2
   local log=$3
-  echo -e "\e[1m\e[4m$(date | awk '{print $4}') - $msg...\e[0m" 2>&1 | tee -a /dev/console
-  echo "$(date) START: Running $runThis..." >> $log
-  if [ "$debug" = true ]; then
-    unbuffer $runThis $verbose | tee -a $log /dev/console
+  if resumeProfile "${msg}"; then
+    echo -e "\e[1m\e[4m$(date | awk '{print $4}') - $msg...\e[0m" 2>&1 | tee -a /dev/console
+    echo "$(date) START: Running $runThis..." >> $log
+    if [ "$debug" = true ]; then
+      unbuffer $runThis $verbose | tee -a $log /dev/console
+    else
+      (eval $runThis >> $log 2>&1) &
+      spinner
+      wait %1
+      exitcode=$?
+      if [ $exitcode -ne 0 ]; then
+        local success=false
+      else
+        local success=true
+      fi
+      if [ "$success" = false ]; then
+        IP=$(ip route get 8.8.8.8 | awk 'NR==1 {print $NF}')
+        echo "$(date) FAILED: Running $runThis..." >> $log
+        echo -e "\e[1m[\e[31mFAILED: Running $runThis\e[39m]" 2>&1 | tee -a /dev/console
+        echo -e "\e[1mPress 'enter' to login to the console or SSH into $IP using username 'root' and password as 'uos'.  After logging in, check the file $log." 2>&1 | tee -a /dev/console
+        echo ${msg} > /target/root/tmp/profile_failed_cmd.txt
+        exit 1
+      else
+        echo "$(date) SUCCESS: Running $runThis..." >> $log
+        echo -e "\e[1m[\e[32msuccess\e[39m]" 2>&1 | tee -a /dev/console
+      fi
+    fi
   else
-    (eval $runThis >> $log 2>&1) &
-    spinner
-    wait %1
-    exitcode=$?
-    if [ $exitcode -ne 0 ]; then
-      local success=false
-    else
-      local success=true
-    fi
-    if [ "$success" = false ]; then
-      IP=$(ip route get 8.8.8.8 | awk 'NR==1 {print $NF}')
-      echo "$(date) FAILED: Running $runThis..." >> $log
-      echo -e "\e[1m[\e[31mFAILED: Running $runThis\e[39m]" 2>&1 | tee -a /dev/console
-      echo -e "\e[1mPress 'enter' to login to the console or SSH into $IP using username 'root' and password as 'uos'.  After logging in, check the file $log." 2>&1 | tee -a /dev/console
-      exit 1
-    else
-      echo "$(date) SUCCESS: Running $runThis..." >> $log
-      echo -e "\e[1m[\e[32msuccess\e[39m]" 2>&1 | tee -a /dev/console
-    fi
+    echo "$(date) Skip running $msg..." >> $log
   fi
 }
 

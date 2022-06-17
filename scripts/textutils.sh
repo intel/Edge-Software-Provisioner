@@ -240,7 +240,7 @@ validateInput() {
         ;;
 
         "fqdn" )
-            local regex='^(?=^.{4,253}$)(^(?:[a-zA-Z](?:(?:[a-zA-Z0-9\-]){0,61}[a-zA-Z])?\.)+[a-zA-Z]{2,}$)$'
+            local regex='^(?=^.{4,253}$)(^(?:[a-zA-Z](?:(?:[a-zA-Z0-9-]){0,61}[a-zA-Z])?\.)+[a-zA-Z]{2,}$)$'
             if [[ ! ${string} =~ ${regex} ]]; then
                 printErrMsg "  ${msg}"
                 exit;
@@ -256,7 +256,7 @@ validateInput() {
         ;;
 
         "filename" )
-            local regex='^[A-Za-z0-9_\-\.]+$'
+            local regex='^[A-Za-z0-9_\.-]+$'
             if [[ ! ${string} =~ ${regex} ]]; then
                 printErrMsg "  ${msg}"
                 exit;
@@ -264,7 +264,7 @@ validateInput() {
         ;;
 
         "dirname" )
-            local regex='^[A-Za-z0-9_\-\/\.]+$'
+            local regex='^[A-Za-z0-9_\/\.-]+$'
             if [[ ! ${string} =~ ${regex} ]]; then
                 printErrMsg "  ${msg}"
                 exit;
@@ -280,7 +280,7 @@ validateInput() {
         ;;
 
         "container" )
-            local regex='^[A-Za-z0-9_\-\/\.:]+$'
+            local regex='^[A-Za-z0-9_\/\.:-]+$'
             if [[ ! ${string} =~ ${regex} ]]; then
                 printErrMsg "  ${msg}"
                 exit;

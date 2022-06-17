@@ -44,10 +44,15 @@ create_cert() {
 }
 
 download_cerbot() {
-	if [ ! -f "/etc/nginx/conf.d/options-ssl-nginx.conf" ] || [ ! -f "/etc/nginx/conf.d/ssl-dhparams.pem" ]; then
+	if [ ! -f "/etc/nginx/conf.d/options-ssl-nginx.conf" ] || [ ! -f "/etc/nginx/ssl-dhparams.pem" ]; then
 		echo "Downloading recommended TLS parameters from Certbot..."
-		wget -qO - https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > /etc/nginx/conf.d/options-ssl-nginx.conf
-		wget -qO - https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > /etc/nginx/ssl-dhparams.pem
+		wget -qO - https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > /etc/nginx/conf.d/options-ssl-nginx.conf | exit 0
+		wget -qO - https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > /etc/nginx/ssl-dhparams.pem | exit 0
+		if [ ! -s "/etc/nginx/conf.d/options-ssl-nginx.conf" ] || [ ! -s "/etc/nginx/ssl-dhparams.pem" ]; then
+			echo "Copying offline version of the file"
+			cp -rf /tmp/options-ssl-nginx.conf /etc/nginx/conf.d/options-ssl-nginx.conf
+			cp -rf /tmp/ssl-dhparams.pem /etc/nginx/ssl-dhparams.pem
+		fi
 	fi
 }
 

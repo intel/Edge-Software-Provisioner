@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+source /opt/bootstrap/functions
+
+export CONSOLE_OUTPUT="/dev/console"
+
+kernel_params=$(cat /proc/cmdline)
+
+if [[ $kernel_params = *"httpserver="* ]]; then
+  tmp="${kernel_params##*httpserver=}"
+  param_httpserver="${tmp%% *}"
+else
+  clear 
+  echo "" 2>&1 | tee -a ${CONSOLE_OUTPUT}
+  echo "[            ] 'httpserver' kernel parameter missing in profile_request script!"
+  sleep 20
+  reboot
+fi
+
+echo "[            ] KERNEL_PARAMS: $kernel_params" 2>&1 |tee -a ${CONSOLE_OUTPUT}
+echo "[            ] param_httpserver: $param_httpserver" 2>&1 |tee -a ${CONSOLE_OUTPUT}
+
+param_hwqueries="macaddress cpu"
+
+#make sure requests is empty
+requests=""
+
+for i in ${param_hwqueries}; do
+  case ${i} in
+    "macaddress"  ) ethdevice=$(ip route get 8.8.8.8 | awk '{for(i=1;i<=NF;i++) if ($i=="src") print $(i-1)}');
+                    macaddr=$(cat /sys/class/net/$ethdevice/address);
+                    mac_req="\"mac\":\"$macaddr\"";
+                    requests=${requests}${mac_req};;
+		    # grep for Model name, then remove everythind until ':', then remove the blanks, then remove all after '@', then remove trailing blanks
+    "cpu"         ) cpu_name=$(lscpu |grep "Model name" | sed 's|.*\:\(.*\)|\1|' | sed -e 's/^[ \t]*//' | sed 's/@.*//' | sed 's/ *$//');
+                    cpu_req="\"cpu\":\"$cpu_name\"";
+                    requests=${requests}${cpu_req};;
+  esac
+  requests=${requests}", "
+done
+
+#remove last blank and comma
+requests=${requests::-2}
+
+request_line="curl -d '{${requests}}'i -H \"Content-Type: application/json\" -X POST $param_httpserver:8580/hardwares"
+
+echo "[            ] HTTP request: $request_line"  2>&1 | tee -a ${CONSOLE_OUTPUT}
+
+response=$(eval $request_line)
+
+echo "[            ] HTTP response: $response"  2>&1 | tee -a ${CONSOLE_OUTPUT}
+
+profile_url=$(sed 's#.*url":"\([^"{}]*\).*#\1#' <<<$response)
+
+profile_name=$(sed 's#.*profile/\([^"{}]*\).*#\1#' <<<$profile_url | sed 's#/bootstrap.sh##')
+
+profile_basebranch=$(sed 's#.*basebranch":"\([^"{}]*\).*#\1#' <<<$response)
+
+
+kernel_params=$(sed "s/##PROFILE##/$profile_name/g" <<<$kernel_params)
+
+echo "[            ] Profile URL: $profile_url"  2>&1 | tee -a ${CONSOLE_OUTPUT}
+echo "[            ] Profile kernel parameters: $kernel_params" 2>&1 |tee -a ${CONSOLE_OUTPUT}
+
+profileparams=$(sed 's#.*kernelParams":"\([^"{}]*\).*#\1#' <<<$response)
+
+profileparams=$profileparams" bootstrap="$profile_url" basebranch="$profile_basebranch
+
+
+kernel_params=$kernel_params" "$profileparams
+echo "[            ] New kernel cmdline to continue with: $kernel_params" 2>&1 |tee -a ${CONSOLE_OUTPUT}
+
+echo $kernel_params > /tmp/cmdline
+
+mount -o bind /tmp/cmdline /proc/cmdline
+

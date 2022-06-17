@@ -73,7 +73,7 @@ if [ ! -d ${BUILDER_PATH}/root/.git ]; then
   TAG_PREFIX_TMP=$(docker ps | grep _dnsmasq_1 | awk '{print $2}' | head -n 1)
   TAG_PREFIX=${TAG_PREFIX_TMP%%/builder-dnsmasq}
 
-  IMAGES="builder-core builder-gitea builder-dnsmasq builder-squid builder-web builder-git builder-wget builder-aws-cli builder-uos builder-qemu builder-certbot builder-smb uos-kernel uos-wlan:v1.0 uos-firmware-wifi:v1.0 uos-dyninit:v1.0"
+  IMAGES="builder-core builder-gitea builder-dnsmasq builder-squid builder-web builder-git builder-wget builder-aws-cli builder-uos builder-qemu builder-certbot builder-smb builder-dyn-profile uos-kernel uos-wlan:v1.0 uos-firmware-wifi:v1.0 uos-dyninit:v1.0"
   if [ "${TAG_PREFIX}" != "" ] && [ "${TAG_PREFIX}" != "${TAG_PREFIX_TMP}" ]; then
     for image in ${IMAGES}; do
       if ( docker images | grep "${TAG_PREFIX}/${image} " > /dev/null 2>&1 ); then

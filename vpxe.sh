@@ -21,6 +21,9 @@ source "scripts/bulkfileutils.sh"
 source "scripts/profileutils.sh"
 source "scripts/pxemenuutils.sh"
 source "scripts/templateutils.sh"
+if [ -f ".env" ]; then
+    source ".env"
+fi
 
 printHelp() {
     printMsg "\n Main ${T_BOLD}${C_BLUE}Virtual PXE Script${T_RESET}"
@@ -85,9 +88,9 @@ fi
 
 # Incorporate proxy preferences
 if [ "${HTTP_PROXY+x}" != "" ]; then
-    export DOCKER_BUILD_ARGS="--build-arg http_proxy='${http_proxy}' --build-arg https_proxy='${https_proxy}' --build-arg HTTP_PROXY='${HTTP_PROXY}' --build-arg HTTPS_PROXY='${HTTPS_PROXY}' --build-arg NO_PROXY='localhost,127.0.0.1'"
-    export DOCKER_RUN_ARGS="--env http_proxy='${http_proxy}' --env https_proxy='${https_proxy}' --env HTTP_PROXY='${HTTP_PROXY}' --env HTTPS_PROXY='${HTTPS_PROXY}' --env NO_PROXY='localhost,127.0.0.1'"
-    export AWS_CLI_PROXY="export http_proxy='${http_proxy}'; export https_proxy='${https_proxy}'; export HTTP_PROXY='${HTTP_PROXY}'; export HTTPS_PROXY='${HTTPS_PROXY}'; export NO_PROXY='localhost,127.0.0.1';"
+    export DOCKER_BUILD_ARGS="--build-arg http_proxy='${http_proxy}' --build-arg https_proxy='${https_proxy}' --build-arg HTTP_PROXY='${HTTP_PROXY}' --build-arg HTTPS_PROXY='${HTTPS_PROXY}' --build-arg NO_PROXY='${NO_PROXY}' --build-arg no_proxy='${no_proxy}'"
+    export DOCKER_RUN_ARGS="--env http_proxy='${http_proxy}' --env https_proxy='${https_proxy}' --env HTTP_PROXY='${HTTP_PROXY}' --env HTTPS_PROXY='${HTTPS_PROXY}' --env NO_PROXY='${NO_PROXY}' --env no_proxy='${no_proxy}'"
+    export AWS_CLI_PROXY="export http_proxy='${http_proxy}'; export https_proxy='${https_proxy}'; export HTTP_PROXY='${HTTP_PROXY}'; export HTTPS_PROXY='${HTTPS_PROXY}'; export NO_PROXY='${NO_PROXY}'; export no_proxy='${no_proxy}';"
 else
     export DOCKER_BUILD_ARGS=""
     export DOCKER_RUN_ARGS=""

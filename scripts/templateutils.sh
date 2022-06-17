@@ -14,15 +14,27 @@
 # parseConfig
 
 getMyIp() {
-    echo $(ip route get 8.8.8.8 | awk '{for(i=1;i<=NF;i++) if ($i=="src") print $(i+1)}')
+    if [[ -z "${builder_config_interface+x}" ]]; then
+        echo $(ip route get 8.8.8.8 | awk '{for(i=1;i<=NF;i++) if ($i=="src") print $(i+1)}')
+    else
+        echo $(ip route |grep ${builder_config_interface} |grep src |awk '{for(i=1;i<=NF;i++) if ($i=="src") print $(i+1)}')
+    fi
 }
 
 getMyDefaultRoute() {
-    echo $(ip route show | grep -i 'default via'| awk '{print $3 }')
+    if [[ -z "${builder_config_interface+x}" ]]; then
+        echo $(ip route show | grep -i 'default via'| awk '{print $3 }')
+    else
+        echo $(ip route show |grep ${builder_config_interface} |grep src | awk '{print $9}')
+    fi
 }
 
 getMyBroadcast() {
-    echo $(ip -o -4 addr list $(ip route show 0.0.0.0/0 | awk '{print $5}') | grep brd |  awk '{print $6}')
+    if [[ -z "${builder_config_interface+x}" ]]; then
+        echo $(ip -o -4 addr list $(ip route show 0.0.0.0/0 | awk '{print $5}') | grep brd |  awk '{print $6}')
+    else
+        echo $(ip -o -4 addr list ${builder_config_interface} |grep brd | awk '{print $6}')
+    fi
 }
 
 getMySubnet() {
@@ -30,8 +42,13 @@ getMySubnet() {
 }
 
 detectDHCP() {
-    local ip=$(docker run -it --rm --net=host --entrypoint="" builder-dnsmasq sh -c 'nmap --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}"' )
-    echo ${ip} | tr -d '\r' 2> /dev/null
+    if [[ -z "${builder_config_interface+x}" ]]; then
+        local ip=$(docker run -it --rm --net=host --entrypoint="" builder-dnsmasq sh -c 'nmap --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}"' )
+        echo ${ip} | tr -d '\r' 2> /dev/null
+    else
+        local ip=$(docker run -it --rm --net=host -e INTERFACE=${builder_config_interface} --entrypoint="" builder-dnsmasq sh -c 'nmap -e ${INTERFACE} --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}"' )
+        echo ${ip} | tr -d '\r' 2> /dev/null
+    fi
 }
 
 # Checks for empty network-related configuration items in
@@ -112,6 +129,12 @@ verifyNetworkConfig() {
         logInfoMsg "Using default network_dns_secondary=${builder_config_network_dns_secondary} - Set network_dns_secondary in conf/config.yml and re-run this script if this value is not desired."
     fi
 
+    # No network interface specfied, using default network device
+    if [[ -z "${builder_config_interface+x}" ]]; then
+        printDatedInfoMsg "No network device defined by user, using default network device. Set interface in conf/config.yml and re-run this script if this value is not desired."
+        logInfoMsg "No network device defined by user, using default network device. Set interface in conf/config.yml and re-run this script if this value is not desired."
+    fi
+
     printDatedOkMsg "Network configuration determined."
     logOkMsg "Network configuration determined."
 }
@@ -138,7 +161,11 @@ renderSystemNetworkTemplates() {
     local pxeLegacyMenuFile="${pxeMenuLegacyFileDir}/default"
     # Set template file locations
     local tmpDnsMasqConf="template/dnsmasq/dnsmasq.conf"
-    local tmpPxeMenuFile=$(getTmpPxeMenuLocation)
+    if [[ ${DYNAMIC_PROFILE} == "false" ]];then
+        local tmpPxeMenuFile=$(getTmpPxeMenuLocation)
+    else
+        local tmpPxeMenuFile="template/pxelinux.cfg/default.dynamic"
+    fi
 
     # Copy template files
     copySampleFile ${tmpDnsMasqConf} ${tmpDnsMasqConf}.modified
@@ -154,6 +181,7 @@ renderSystemNetworkTemplates() {
     local networkDnsPrimaryPlaceholder=("@@NETWORK_DNS_PRIMARY@@" "@@ESP_NETWORK_DNS_PRIMARY@@" "@@RNI_NETWORK_DNS_PRIMARY@@" "@@EDGEBUILDER_NETWORK_DNS_PRIMARY@@")
     local networkDnsSecondaryPlaceholder=("@@NETWORK_DNS_SECONDARY@@" "@@ESP_NETWORK_DNS_SECONDARY@@" "@@RNI_NETWORK_DNS_SECONDARY@@" "@@EDGEBUILDER_NETWORK_DNS_SECONDARY@@")
     local pxeCommentPlaceholder=("@@PXE_COMMENT@@" "@@ESP_PXE_COMMENT@@" "@@RNI_PXE_COMMENT@@" "@@EDGEBUILDER_PXE_COMMENT@@")
+    local interfacePlaceholder=("@@INTERFACE_BINDING@@" "@@ESP_INTERFACE_BINDING@@" "@@RNI_INTERFACE_BINDING@@")
 
     # Replace all the potential variables in the staged files.
     # Note that profile-scoped variables are not accessible here.
@@ -172,6 +200,11 @@ renderSystemNetworkTemplates() {
             sed -i -e "s/${networkDnsPrimaryPlaceholder[i]}/${builder_config_network_dns_primary}/g" ${stgFile}
             sed -i -e "s/${networkDnsSecondaryPlaceholder[i]}/${builder_config_network_dns_secondary}/g" ${stgFile}
             sed -i -e "s/${pxeCommentPlaceholder[i]}/${builder_config_pxe_comment}/g" ${stgFile}
+            if [[ -z "${builder_config_interface+x}" ]]; then
+                sed -i -e "s/${interfacePlaceholder[i]}//g" ${stgFile}
+            else
+                sed -i -e "s/${interfacePlaceholder[i]}/interface=${builder_config_interface}\nbind-interfaces/g" ${stgFile}
+            fi
         done
         logInfoMsg "Applied network config to ${stgFile}"
     done
@@ -244,6 +277,13 @@ renderTemplate() {
         sed -i -e "s/${networkDnsSecondaryPlaceholder[i]}/${builder_config_network_dns_secondary}/g" ${fileName}.modified
     done
     sed -i -e "s/${profileNamePlaceholder}/${profileName}/g" ${fileName}.modified
+
+    if [[ -z ${secret_config_tokens__token+x} ]]; then
+        logMsg "No secret tokens found, nothing to do here"
+    else
+        local tmpFileName="${fileName}.modified"
+        renderSecretTemplate ${tmpFileName}
+    fi
 
     # Get the name of the actual file by using awk to split the file name.
     # Example:

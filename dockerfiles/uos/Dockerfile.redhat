@@ -1,0 +1,36 @@
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM registry.access.redhat.com/ubi8/ubi as kernel-builder
+LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
+
+ARG KERNEL_VERSION=4.18.0-348.2.1.el8_5
+ARG ARCH=x86_64
+
+RUN dnf install -y \
+    wget \
+    tar \
+    kmod \
+    cpio
+
+WORKDIR /build
+RUN mkdir /out
+
+RUN yum download --downloadonly --downloaddir=/build/ kernel-${KERNEL_VERSION}.${ARCH} kernel-core-${KERNEL_VERSION}.${ARCH} kernel-modules-${KERNEL_VERSION}.${ARCH} kernel-modules-extra-${KERNEL_VERSION}.${ARCH}
+
+RUN rpm2cpio kernel-${KERNEL_VERSION}.${ARCH}.rpm | cpio -i --make-directories && \
+    rpm2cpio kernel-core-${KERNEL_VERSION}.${ARCH}.rpm | cpio -i --make-directories && \
+    rpm2cpio kernel-modules-${KERNEL_VERSION}.${ARCH}.rpm | cpio -i --make-directories && \
+    rpm2cpio kernel-modules-extra-${KERNEL_VERSION}.${ARCH}.rpm | cpio -i --make-directories && \
+    for d in lib/modules/*; do depmod -b . $(basename $d); done && \
+    mv lib/modules/*/vmlinuz* /out/kernel && \
+    mv lib/modules/*/config* /out/kernel_config && \
+    mv lib/modules/*/System* /out/System.map && \
+    tar cf /out/kernel.tar lib && \
+    tar cf /out/kernel-dev.tar usr || true
+
+FROM scratch
+ENTRYPOINT []
+CMD []
+WORKDIR /
+COPY --from=kernel-builder /out/* /

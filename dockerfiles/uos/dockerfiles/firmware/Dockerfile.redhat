@@ -1,0 +1,28 @@
+# Copyright (C) 2020 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM registry.access.redhat.com/ubi8/ubi as kernel-builder
+LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
+
+ARG FIRMWARE=20210702-103.gitd79c2677.el8
+ARG ARCH=noarch
+
+RUN dnf install -y \
+    wget \
+    tar \
+    kmod \
+    cpio
+
+WORKDIR /build
+RUN mkdir /out
+
+RUN yum download --downloadonly --downloaddir=/build/ linux-firmware-${FIRMWARE} 
+
+RUN rpm2cpio linux-firmware-${FIRMWARE}.${ARCH}.rpm | cpio -i --make-directories && \
+    mv usr/lib /out/
+
+FROM scratch
+ENTRYPOINT []
+CMD []
+WORKDIR /
+COPY --from=kernel-builder /out/* /

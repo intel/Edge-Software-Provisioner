@@ -4,17 +4,16 @@
 FROM alpine:3.12 as kernel-builder
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-ARG UBUNTU_RELEASE=5.15.0-23-generic
 ARG FIRMWARE=1.201.5_all
 
 RUN apk update && apk add --no-cache \
-		bash \
-		wget \
-		tar \
-		rpm \
-		cpio \
-		binutils \
-                zstd
+    bash \
+    wget \
+    tar \
+    rpm \
+    cpio \
+    binutils \
+    zstd
 
 WORKDIR /build
 RUN mkdir /out
@@ -26,8 +25,8 @@ RUN mkdir /out
 RUN wget https://mirrors.edge.kernel.org/ubuntu/pool/main/l/linux-firmware/linux-firmware_${FIRMWARE}.deb
 
 RUN ar x linux-firmware_${FIRMWARE}.deb && \
-		tar -xf data.tar.zst && \
-		mv ./lib /out/
+    tar -xf data.tar.zst && \
+    mv ./lib /out/
 
 FROM scratch
 ENTRYPOINT []

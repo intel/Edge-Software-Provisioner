@@ -4,8 +4,8 @@
 FROM alpine:3.12 as build
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-ARG CLEARLINUX_RELEASE=34270
-ARG FIRMWARE=wifi-20210208-154
+ARG CLEARLINUX_RELEASE=36410
+ARG FIRMWARE=wifi-20220509-171
 
 RUN apk update && apk add --no-cache \
   	bash \

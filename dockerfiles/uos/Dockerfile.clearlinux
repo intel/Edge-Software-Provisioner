@@ -4,14 +4,14 @@
 FROM alpine:3.12 as kernel-builder
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-ARG CLEARLINUX_RELEASE=34270
-ARG KERNEL_VERSION=5.10.15-1024
+ARG CLEARLINUX_RELEASE=34780
+ARG KERNEL_VERSION=5.12.13-1050
 ARG KERNEL_PREFIX
 
 RUN apk update && apk add --no-cache \
-	bash \
+    bash \
     wget \
-	tar \
+    tar \
     rpm \
     cpio
 

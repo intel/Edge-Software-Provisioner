@@ -25,6 +25,7 @@ printHelp() {
     printMsg "  ${T_BOLD}-r${T_RESET}, --restart       Will only restart the containers"
     printMsg "  ${T_BOLD}-d${T_RESET}, --down          Will stop all containers and cleanup excess mounts"
     printMsg "  ${T_BOLD}-n${T_RESET}, --no-tail-logs  Do not tail the containers' logs after completion (default is to tail)"
+    printMsg "  ${T_BOLD}-D${T_RESET}, --dynamic       RUN ESP with dynamic profile support, if included in build"
     printMsg "  ${T_BOLD}-h${T_RESET}, --help          Show this help dialog"
     printMsg ""
     printMsg " Usage: ./run.sh"
@@ -52,6 +53,7 @@ printMsg "\n-------------------------"
 printMsg " ${T_BOLD}${C_BLUE}Welcome${T_RESET}"
 printMsg "-------------------------"
 logMsg "Welcome to the builder host run script"
+
 
 if [[ "${DOWN}" == "true" ]]; then
     printDatedInfoMsg "Stopping containers..."
@@ -114,7 +116,7 @@ else
     if podman -v >/dev/null 2>&1; then
         scripts/espctl.sh up --no-dnsmasq
     else
-        docker-compose up -d core web certbot registry-mirror squid mirror smb
+        docker-compose up -d core web certbot registry-mirror squid mirror smb dyn-profile
     fi
 fi
 

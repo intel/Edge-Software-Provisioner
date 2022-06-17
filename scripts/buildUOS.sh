@@ -25,15 +25,16 @@ if podman -v >/dev/null 2>&1; then
     touch /etc/containers/nodocker
     run "(0/12) Preparing Host Docker" \
         "docker rm hostbuilder-docker -f >/dev/null 2>&1; \
+        if ! (docker -v >/dev/null 2>&1); then yum install -q -y podman-docker > /dev/null 2>&1; fi; \
         mkdir -p /tmp/host-builder && \
         mkdir -p $(pwd)/lib/docker-host && \
         docker run -d --privileged --name hostbuilder-docker ${DOCKER_RUN_ARGS} -v /tmp/host-builder:/var/run -v $(pwd)/lib/docker-host:/var/lib/docker -v /lib/modules:/lib/modules docker:19.03.12-dind && \
         sleep 10" \
         ../../${LOG_FILE}
     run "(1/12) Downloading and preparing the kernel" \
-        "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v $(pwd):/uos -v /tmp/host-builder:/var/run docker:19.03.12-dind sh -c '\
-        cd /uos && \
-        docker build --rm ${DOCKER_BUILD_ARGS} -t uos/kernel -f ./Dockerfile.${UOS_KERNEL} .'" \
+        "podman build --rm ${DOCKER_BUILD_ARGS} -t uos/kernel -f ./Dockerfile.${UOS_KERNEL} . && \
+        podman save uos/kernel | docker exec -i hostbuilder-docker docker load && \
+        docker exec -i hostbuilder-docker docker tag localhost/uos/kernel:latest uos/kernel:latest" \
         ../../${LOG_FILE}
     run "(2/12) Downloading and preparing the initrd" \
         "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v $(pwd):/uos -v /tmp/host-builder:/var/run docker:19.03.12-dind sh -c '\
@@ -46,9 +47,9 @@ if podman -v >/dev/null 2>&1; then
         docker build --rm ${DOCKER_BUILD_ARGS} -t uos/wlan:v1.0 dockerfiles/wlan'" \
         ../../${LOG_FILE}
     run "(4/12) Building WiFi Firmware" \
-        "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v $(pwd):/uos -v /tmp/host-builder:/var/run docker:19.03.12-dind sh -c '\
-        cd /uos && \
-        docker build --rm ${DOCKER_BUILD_ARGS} -t uos/firmware-wifi:v1.0 -f ./dockerfiles/firmware/Dockerfile.${UOS_KERNEL} dockerfiles/firmware'" \
+        "podman build --rm ${DOCKER_BUILD_ARGS} -t uos/firmware-wifi:v1.0 -f ./dockerfiles/firmware/Dockerfile.${UOS_KERNEL} dockerfiles/firmware && \
+        podman save uos/firmware-wifi:v1.0 | docker exec -i hostbuilder-docker docker load && \
+        docker exec -i hostbuilder-docker docker tag localhost/uos/firmware-wifi:v1.0 uos/firmware-wifi:v1.0" \
         ../../${LOG_FILE}
     run "(5/12) Compiling tools" \
         "if docker images | grep uosbuilder:${GIT_COMMIT}; then \
@@ -79,7 +80,7 @@ if podman -v >/dev/null 2>&1; then
             rm -fr /tmp/builder; \
         fi" \
         ../../${LOG_FILE}
-    run "(6/12) Building UOS" \
+    run "(6/12) Building ESP uOS" \
         "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v /tmp/host-builder:/var/run -v $(pwd):/uos uosbuilder:${GIT_COMMIT} -c 'cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos.yml' && \
         docker rm -f hostbuilder-docker && \
         rm -fr /tmp/host-builder" \
@@ -123,7 +124,7 @@ else
             rm -fr /tmp/builder; \
         fi" \
         ../../${LOG_FILE}
-    run "(6/12) Building UOS" \
+    run "(6/12) Building ESP uOS" \
         "docker run -t --rm ${DOCKER_RUN_ARGS} -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/uos builder-uos:${GIT_COMMIT} -c 'cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos.yml'" \
         ../../${LOG_FILE}
 fi
@@ -134,7 +135,8 @@ run "(7/12) Prepping initrd" \
             cpio \
             coreutils \
             gzip \
-            rsync && \
+            rsync \
+            curl && \
         cd /uos && \
         ./prepInitrd.sh 2>&1'" \
     ../../${LOG_FILE}

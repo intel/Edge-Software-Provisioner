@@ -13,6 +13,9 @@ RUN apk --no-cache add \
     apk --no-cache -U upgrade && \
     update-ca-certificates
 
+RUN wget -qO - https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > /tmp/options-ssl-nginx.conf
+RUN wget -qO - https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > /tmp/ssl-dhparams.pem
+
 COPY init /usr/local/bin/
 COPY openssl.cnf /etc/ssl
 
