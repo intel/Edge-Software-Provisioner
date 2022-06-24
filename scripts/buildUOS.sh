@@ -128,15 +128,8 @@ else
         "docker run -t --rm ${DOCKER_RUN_ARGS} -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/uos builder-uos:${GIT_COMMIT} -c 'cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos.yml'" \
         ../../${LOG_FILE}
 fi
-run "(7/12) Prepping initrd" \
-    "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v $(pwd):/uos alpine:3.12 sh -c '\
-        apk update && apk add --no-cache \
-            bash \
-            cpio \
-            coreutils \
-            gzip \
-            rsync \
-            curl && \
+run "(7/12) Prepping initrd (~10 min)" \
+    "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v $(pwd):/uos builder-uos:${GIT_COMMIT} -c '\
         cd /uos && \
         ./prepInitrd.sh 2>&1'" \
     ../../${LOG_FILE}

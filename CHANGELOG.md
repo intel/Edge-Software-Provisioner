@@ -129,6 +129,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fixed missing DOCKER_RUN_ARGS
 - Fixed Miscellaneous typos
 
+## [2.0.4] - 2021-12-03
+### Changed
+- Fixed /dev/null permissions
+- Fixed BASH syntax between distro versions
+- Fixed builder-docker runtime detection
+- Fixed Miscellaneous bugs
+
 ## [2.5.0] - 2022-06-17
 ### Added
 - Dynamic Profiles - The Dynamic Profile feature allows ESP to install software on a target machine without any user interaction.  See https://github.com/intel/Edge-Software-Provisioner#dynamic-profile
@@ -151,6 +158,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Known Issue
 - Virtual PXE (vpxe.sh) may cause a kernel panic under a nested VM.  Work around is to build a different kernel.  For example, `./build.sh -k ubuntu -P`
 
+## [2.5.1] - 2022-06-24
+### Changed
+- Fixed default initrd size being to big
+- Fixed Miscellaneous bugs
+
 
 
 
@@ -162,4 +174,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [2.0.1]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.0...v2.0.1
 [2.0.2]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.0.1...v2.0.2
 [2.0.3]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.0.2...v2.0.3
+[2.0.4]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.0.3...v2.0.4
 [2.5.0]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.0.3...v2.5
+[2.5.1]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5...v2.5.1

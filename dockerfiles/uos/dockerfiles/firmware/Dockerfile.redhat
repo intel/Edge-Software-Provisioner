@@ -25,4 +25,4 @@ FROM scratch
 ENTRYPOINT []
 CMD []
 WORKDIR /
-COPY --from=kernel-builder /out/* /
+COPY --from=kernel-builder /out/* /lib/

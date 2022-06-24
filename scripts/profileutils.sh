@@ -992,28 +992,6 @@ genProfileVirtualPxeBoot() {
     fi
 }
 
-genOfflineImage() {
-    printDatedMsg "Checking if there is an offline version of alpine"
-    logMsg "Checking if there is an offline version of alpine"
-    OFFLINE_ALPINE="alpine-offline"
-
-    IS_OFFLINE_ALPINE_AVAILABLE=$(docker images | grep $OFFLINE_ALPINE > /dev/null ;if [ $? -eq 0 ] ; then echo yes ; else echo no ; fi)
-
-    if [ "$IS_OFFLINE_ALPINE_AVAILABLE" == "no" ]; then
-        printDatedMsg "- Offline image [${C_RED}Unavailable${T_RESET}]"
-        logMsg "- Offline image [Unavailable]"
-        run "Creating an offline alpine Image alpine-offline" \
-            "docker run --name alpine_container --privileged ${DOCKER_RUN_ARGS} alpine sh -c \"apk update > /dev/null &&  \
-            apk add util-linux syslinux coreutils parted rsync e2fsprogs pv coreutils bash findutils lsblk gzip cpio > /dev/null \" && \
-            docker commit alpine_container $OFFLINE_ALPINE > /dev/null && docker rm -v alpine_container > /dev/null" \
-            ${LOG_FILE}
-    else
-        printDatedMsg "- Offline image [${C_GREEN}Available${T_RESET}]"
-        logMsg "- Offline image [Available]"
-    fi
-}
-
-
 genProfileUsbBoot() {
     # Not all of these arguments may be used by this function, but this
     # follows a consistent format. See the "profilesActions" function
@@ -1128,10 +1106,10 @@ genProfileUsbBoot() {
 
     KERNEL_PARAMS=$(cat ${usb_path}/${name}/uos-cmdline)
 
-    genOfflineImage
+    UOS_BUILDER="builder-uos:$(docker images | grep builder-uos | awk '{print $2}' | head -1)"
 
     if [ "${USB_RANDOM}" == "true" ]; then
-        _uuid=$(docker run $OFFLINE_ALPINE sh -c 'uuidgen')
+        _uuid=$(docker run ${UOS_BUILDER} -c 'uuidgen')
         IMG_NAME="${_uuid}"
     else
         IMG_NAME="uos-${USB_BIOS}"
@@ -1161,17 +1139,18 @@ genProfileUsbBoot() {
         else
             # Use Micro OS (uOS).
             logMsg "Preparing bootable USB stick for ${name} profile."
-            logMsg "Running command: docker run -i --rm --privileged --net host --name builder-usb -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd)/${usb_path}/${name}:/uos:shared builder-uos:$(docker images | grep builder-uos | awk '{print $2}' | head -1) -c \"cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos.yml\""
+            logMsg "Running command: docker run -i --rm --privileged --net host --name builder-usb -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd)/${usb_path}/${name}:/uos:shared ${UOS_BUILDER} -c \"cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos.yml\""
 
-            run "Preparing bootable USB stick for ${name} profile." \
-                "docker run -i --rm --privileged --net host --name builder-usb \
+            run "Preparing bootable USB stick for ${name} profile. (~10 min)" \
+                "docker run -t --rm --privileged --net host --name builder-usb \
                 -v /var/run/docker.sock:/var/run/docker.sock \
                 -v ${uosBuildPath}:/uos:shared \
                 -v ${TFTP_IMAGES}/uos/usb:/target:shared \
-                builder-uos:$(docker images | grep builder-uos | awk '{print $2}' | head -1) -c \
+                ${UOS_BUILDER} -c \
                     \"cd /uos && \
                     /usr/bin/linuxkit build -format kernel+initrd /uos/uos-wifi.yml && \
-                    mv /uos/uos-wifi-initrd.img /target/initrd && \
+                    zcat /uos/uos-wifi-initrd.img | pv | xz -T0 --check=crc32 > /target/initrd && \
+                    mv /uos/uos-wifi-initrd.img /target/initrd.gz && \
                     mv /uos/uos-wifi-kernel /target/vmlinuz\"" \
                 ${LOG_FILE}
 
@@ -1182,24 +1161,25 @@ genProfileUsbBoot() {
             
             if [ "$(ls -A ${EMBEDDED_FILES}/${name} 2> /dev/null )" ] || [ "$(ls -A ${WEB_PROFILE}/${name}/embedded 2> /dev/null)" ]; then
                 mkdir -p ${TFTP_IMAGES}/uos/usb/${name}
-                message="Embedding files into uOS for ${name}."
+                message="Embedding files into uOS for ${name}. (~10 min)"
                 run "${message}" \
-                    "docker run --rm --privileged ${DOCKER_RUN_ARGS} --name esp_embedding \
+                    "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} --name esp_embedding \
                         -v ${TFTP_IMAGES}/uos/usb:/opt/images:shared \
                         -v ${WEB_PROFILE}/${name}/embedded:/opt/profile_embedded:ro \
                         -v ${EMBEDDED_FILES}/${name}:/opt/embedded:ro \
-                        $OFFLINE_ALPINE sh -c 'mkdir -p prep/ && \
+                        ${UOS_BUILDER} -c 'mkdir -p prep/ && \
                             cd prep/ && \
-                            zcat /opt/images/initrd | cpio -idmu && \
+                            zcat /opt/images/initrd.gz | cpio -idmu && \
                             rsync -rtc /opt/profile_embedded/ ./ && \
                             rsync -rtc /opt/embedded/ ./ && \
-                            find . | cpio -H newc -o | gzip > /opt/images/${name}/initrd' \
+                            find . | cpio -H newc -o | pv | xz -T0 --check=crc32 > /opt/images/${name}/initrd' \
                     echo 'Finished with embedding files into uOS, Cleaning up build docker container...'; \
                     docker rm -f esp_embedding > /dev/null 2>&1 || true" \
                     ${LOG_FILE}
                 local initrdPath="data/srv/tftp/images/uos/usb/${name}/initrd"
                 local syslinuxInitrd="/initrd"
             fi
+            rm ${TFTP_IMAGES}/uos/usb/initrd.gz
         fi
 
         # Create syslinux.cfg menu
@@ -1218,7 +1198,7 @@ genProfileUsbBoot() {
         printDatedMsg "Building bootable USB stick for ${name} profile."
         logMsg "Building bootable USB stick for ${name} profile."
         if [ "${USB_BIOS}" == "efi" ]; then
-            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb $OFFLINE_ALPINE sh -c "IMG_SIZE=\$((${KERNEL_SIZE} + ${INITRD_SiZE} + 52428800)) && \
+            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb ${UOS_BUILDER} -c "IMG_SIZE=\$((${KERNEL_SIZE} + ${INITRD_SiZE} + 52428800)) && \
                 truncate --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
                 dd bs=440 count=1 conv=notrunc if=/usr/share/syslinux/gptmbr.bin of=\${TEMP_IMG_DEV} > /dev/null 2>&1 && \
@@ -1239,7 +1219,7 @@ genProfileUsbBoot() {
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
             umount /dev/console
         else
-            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb $OFFLINE_ALPINE sh -c "IMG_SIZE=\$((${KERNEL_SIZE} + ${INITRD_SiZE} + 52428800)) && \
+            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb ${UOS_BUILDER} -c "IMG_SIZE=\$((${KERNEL_SIZE} + ${INITRD_SiZE} + 52428800)) && \
                 truncate --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
                 parted --script \${TEMP_IMG_DEV} mklabel msdos mkpart primary fat32 1MiB 100% set 1 boot on && \
@@ -1270,8 +1250,8 @@ genProfileUsbBoot() {
     USB_IMG_SIZE=$(du -b ${usb_path}/${name}/${IMG_NAME}.img | awk '{print $1}')
 
     if [ "${USB_DEV}" != "" ]; then
-        logMsg "docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb $OFFLINE_ALPINE sh -c \"cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}\""
-        docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb $OFFLINE_ALPINE sh -c "cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}"
+        logMsg "docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb ${UOS_BUILDER} -c \"cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}\""
+        docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb ${UOS_BUILDER} -c "cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}"
     else
         printMsg ""
         printMsg "Use the following command to flash the img to the USB Device."
@@ -1300,10 +1280,10 @@ genAllProfileUsbBoot() {
     touch ${TFTP_IMAGES}/uos/usb/uos-cmdline
     # cp ${ymlPath} ${TFTP_IMAGES}/uos/usb/uos.yml
 
-    genOfflineImage
+    UOS_BUILDER="builder-uos:$(docker images | grep builder-uos | awk '{print $2}' | head -1)"
 
     if [ "${USB_RANDOM}" == "true" ]; then
-        _uuid=$(docker run $OFFLINE_ALPINE sh -c 'uuidgen')
+        _uuid=$(docker run ${UOS_BUILDER} -c 'uuidgen')
         IMG_NAME="${_uuid}"
     else
         IMG_NAME="uos-${USB_BIOS}"
@@ -1321,17 +1301,18 @@ genAllProfileUsbBoot() {
     if [ ! -f ${usb_path}/${name}/${IMG_NAME}.img ]; then
 
         logMsg "Preparing bootable USB stick for ${name} profiles."
-        logMsg "Running command: docker run -i --rm --privileged --net host --name builder-usb -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd)/${usb_path}/${name}:/uos:shared builder-uos:$(docker images | grep builder-uos | awk '{print $2}' | head -1) -c \"cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos.yml\""
+        logMsg "Running command: docker run -i --rm --privileged --net host --name builder-usb -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd)/${usb_path}/${name}:/uos:shared ${UOS_BUILDER} -c \"cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos-wifi.yml\""
 
-        run "Preparing bootable USB stick for ${name} profiles." \
-            "docker run -i --rm --privileged --net host --name builder-usb \
+        run "Preparing bootable USB stick for ${name} profiles. (~10 min)" \
+            "docker run -t --rm --privileged --net host --name builder-usb \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v ${uosBuildPath}:/uos:shared \
             -v ${TFTP_IMAGES}/uos/usb:/target:shared \
-            builder-uos:$(docker images | grep builder-uos | awk '{print $2}' | head -1) -c \
+            ${UOS_BUILDER} -c \
                 \"cd /uos && \
                 /usr/bin/linuxkit build -format kernel+initrd /uos/uos-wifi.yml && \
-                mv /uos/uos-wifi-initrd.img /target/initrd && \
+                zcat /uos/uos-wifi-initrd.img | pv | xz -T0 --check=crc32 > /target/initrd && \
+                mv /uos/uos-wifi-initrd.img /target/initrd.gz && \
                 mv /uos/uos-wifi-kernel /target/vmlinuz\"" \
             ${LOG_FILE}
 
@@ -1339,24 +1320,25 @@ genAllProfileUsbBoot() {
         for profile_name in $(ls ${WEB_PROFILE}/ | grep -v base); do        
             if [ "$(ls -A ${EMBEDDED_FILES}/${profile_name} 2> /dev/null )" ] || [ "$(ls -A ${WEB_PROFILE}/${profile_name}/embedded 2> /dev/null)" ]; then
                 mkdir -p ${TFTP_IMAGES}/uos/usb/${profile_name}
-                message="Embedding files into uOS for ${profile_name}."
+                message="Embedding files into uOS for ${profile_name}. (~10 min)"
                 run "${message}" \
-                    "docker run --rm --privileged ${DOCKER_RUN_ARGS} --name esp_embedding \
+                    "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} --name esp_embedding \
                         -v ${TFTP_IMAGES}/uos/usb:/opt/images:shared \
                         -v ${WEB_PROFILE}/${profile_name}/embedded:/opt/profile_embedded:ro \
                         -v ${EMBEDDED_FILES}/${profile_name}:/opt/embedded:ro \
-                        $OFFLINE_ALPINE sh -c 'mkdir -p prep/ && \
+                        ${UOS_BUILDER} -c 'mkdir -p prep/ && \
                             cd prep/ && \
-                            zcat /opt/images/initrd | cpio -idmu && \
+                            zcat /opt/images/initrd.gz | cpio -idmu && \
                             rsync -rtc /opt/profile_embedded/ ./ && \
                             rsync -rtc /opt/embedded/ ./ && \
-                            find . | cpio -H newc -o | gzip > /opt/images/${profile_name}/initrd' \
+                            find . | cpio -H newc -o | pv | xz -T0 --check=crc32 > /opt/images/${profile_name}/initrd' \
                         echo 'Finished with embedding files into uOS, Cleaning up build docker container...'; \
                         docker rm -f esp_embedding > /dev/null 2>&1 || true" \
                     ${LOG_FILE}
             fi
         done
 
+        rm ${TFTP_IMAGES}/uos/usb/initrd.gz
         USB_IMG_SIZE=$(du -bcs ${TFTP_IMAGES}/uos/usb/* | grep total | awk '{print $1}')
         BOOT_IMAGES_SiZE=$(du -bcs --exclude=iso* --exclude=uos* ${img_path}/* | grep total | awk '{print $1}')
 
@@ -1366,14 +1348,14 @@ genAllProfileUsbBoot() {
         logMsg "Building bootable USB stick for ${name} profiles."
 
         if [ "${USB_BIOS}" == "efi" ]; then
-            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb $OFFLINE_ALPINE sh -c "IMG_SIZE=\$((${USB_IMG_SIZE} + ${BOOT_IMAGES_SiZE} + 52428800)) && \
+            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb ${UOS_BUILDER} -c "IMG_SIZE=\$((${USB_IMG_SIZE} + ${BOOT_IMAGES_SiZE} + 52428800)) && \
                 truncate --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
                 dd bs=440 count=1 conv=notrunc if=/usr/share/syslinux/gptmbr.bin of=\${TEMP_IMG_DEV} > /dev/null 2>&1 && \
                 parted --script \${TEMP_IMG_DEV} mklabel gpt mkpart ESP fat32 1MiB 100% set 1 esp on && \
                 mkfs -t vfat \${TEMP_IMG_DEV}p1 && \
                 mount \${TEMP_IMG_DEV}p1 /mnt && \
-                rsync -rt ${img_path}/uos/usb/ /mnt/ && \
+                rsync -rt --exclude=initrd.gz ${img_path}/uos/usb/ /mnt/ && \
                 rsync -rt --exclude=iso/ --exclude=uos/ ${img_path}/ /mnt/ && \
                 cp /usr/share/syslinux/memdisk /mnt/ && \
                 mkdir -p /mnt/EFI/BOOT/ && \
@@ -1392,7 +1374,7 @@ genAllProfileUsbBoot() {
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
             umount /dev/console
         else
-            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb $(OFFLINE_ALPINE) sh -c "IMG_SIZE=\$((${USB_IMG_SIZE} + ${BOOT_IMAGES_SiZE} + 52428800)) && \
+            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb ${UOS_BUILDER} -c "IMG_SIZE=\$((${USB_IMG_SIZE} + ${BOOT_IMAGES_SiZE} + 52428800)) && \
                 truncate --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
                 dd bs=440 count=1 conv=notrunc if=/usr/share/syslinux/mbr.bin of=\${TEMP_IMG_DEV} > /dev/null 2>&1 && \
@@ -1400,7 +1382,7 @@ genAllProfileUsbBoot() {
                 mkfs -t vfat \${TEMP_IMG_DEV}p1 > /dev/null 2>&1 && \
                 syslinux -i \${TEMP_IMG_DEV}p1 && \
                 mount \${TEMP_IMG_DEV}p1 /mnt && \
-                rsync -rt ${img_path}/uos/usb/ /mnt/ && \
+                rsync -rt --exclude=initrd.gz ${img_path}/uos/usb/ /mnt/ && \
                 rsync -rt --exclude=iso/ --exclude=uos/ ${img_path}/ /mnt/ && \
                 cp /usr/share/syslinux/memdisk /mnt/ && \
                 cp /usr/share/syslinux/*.c32 /mnt/ && \
@@ -1423,8 +1405,8 @@ genAllProfileUsbBoot() {
 
     if [ "${USB_DEV}" != "" ]; then
 
-        logMsg "docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb $(OFFLINE_ALPINE) sh -c \"cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}\""
-        docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb $(OFFLINE_ALPINE) sh -c "cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}"
+        logMsg "docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb ${UOS_BUILDER} -c \"cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}\""
+        docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev -v $(pwd):/usb ${UOS_BUILDER} -c "cd /usb && ./flashusb.sh -i ${usb_path}/${name}/${IMG_NAME}.img -b ${USB_BIOS} -d ${USB_DEV}"
     else
         printMsg ""
         printMsg "Use the following command to flash the img to the USB Device."

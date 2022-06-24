@@ -10,6 +10,6 @@ mkdir -p prep/ && \
 cd prep/ && \
 gunzip -c < ../uos-initrd.img | cpio -i -d && \
 rsync -rtc ../files/ ./ && \
-find . | cpio -H newc -o | gzip > ../uos-initrd.img && \
+find . | cpio -H newc -o | pv | xz -T0 --check=crc32 > ../uos-initrd.img && \
 cd - && \
 rm -fr prep/

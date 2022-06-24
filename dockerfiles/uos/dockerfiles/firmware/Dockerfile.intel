@@ -1,10 +1,10 @@
-# Copyright (C) 2020 Intel Corporation
+# Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
 FROM alpine:3.12 as kernel-builder
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-ARG FIRMWARE=1.201.5_all
+ARG FIRMWARE=1.187.32_all
 
 RUN apk update && apk add --no-cache \
     bash \
@@ -25,11 +25,11 @@ RUN mkdir /out
 RUN wget https://mirrors.edge.kernel.org/ubuntu/pool/main/l/linux-firmware/linux-firmware_${FIRMWARE}.deb
 
 RUN ar x linux-firmware_${FIRMWARE}.deb && \
-    tar -xf data.tar.zst && \
+    tar -xf data.tar.xz && \
     mv ./lib /out/
 
 FROM scratch
 ENTRYPOINT []
 CMD []
 WORKDIR /
-COPY --from=kernel-builder /out/* /
+COPY --from=kernel-builder /out/* /lib/

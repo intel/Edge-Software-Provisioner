@@ -4,11 +4,11 @@
 FROM alpine:3.12 as kernel-builder
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-ARG UBUNTU_RELEASE=5.17.0-1011-oem
-ARG KERNEL_VERSION=5.17.0-1011.12_amd64
+ARG UBUNTU_RELEASE=5.15.0-1010-intel-iotg
+ARG KERNEL_VERSION=5.15.0-1010.14~20.04.1_amd64
 ARG KERNEL_PREFIX
-ARG KERNEL_PATH=linux-oem-5.17
-ARG KERNEL_MODULE_PATH=linux-oem-5.17
+ARG KERNEL_PATH=linux-intel-iotg-5.15
+ARG KERNEL_MODULE_PATH=linux-intel-iotg-5.15
 
 RUN apk update && apk add --no-cache \
     bash \
@@ -26,12 +26,15 @@ RUN mkdir /out
 #  wget -qO - https://mirrors.kernel.org/ubuntu/pool/main/l/linux/ | sed -n 's/.*href="\([^"]*\).*/\1/p' | grep -o "linux-image-unsigned-[0-9]\.[0-9]\+\.[0-9]\+-[0-9]\+-generic_[^ ]\+amd64\.deb"
 
 RUN wget http://mirrors.edge.kernel.org/ubuntu/pool/main/l/${KERNEL_PATH}/linux-image-unsigned-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
-    wget http://mirrors.edge.kernel.org/ubuntu/pool/main/l/${KERNEL_MODULE_PATH}/linux-modules-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb
+    wget http://mirrors.edge.kernel.org/ubuntu/pool/main/l/${KERNEL_MODULE_PATH}/linux-modules-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
+    wget http://mirrors.edge.kernel.org/ubuntu/pool/main/l/${KERNEL_MODULE_PATH}/linux-modules-extra-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb
     
 RUN ar x linux-image-unsigned-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
     tar -xf data.tar && \
     ar x linux-modules-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
-    tar -xf data.tar.zst && \
+    tar -xf data.tar.xz && \
+    ar x linux-modules-extra-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
+    tar -xf data.tar.xz ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/ethernet/ ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/gpu/ ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/phy/ ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/wireless/ && \
     for d in lib/modules/*; do depmod -b . $(basename $d); done && \
     cp boot/vmlinuz* /out/kernel && \
     cp boot/config* /out/kernel_config && \

@@ -483,13 +483,13 @@ processEmbedded() {
             -v ${WEB_PROFILE}/${profile_name}/embedded:/opt/profile_embedded \
             -v ${EMBEDDED_FILES}/${profile_name}:/opt/embedded \
             alpine:3.12 sh -c 'apk update && \
-                apk add rsync gzip && \
+                apk add rsync xz gzip && \
                 mkdir -p prep/ && \
                 cd prep/ && \
                 gunzip -c < /opt/images/initrd | cpio -i -d 2> /dev/null || true && \
                 rsync -rtc /opt/profile_embedded/ ./ && \
                 rsync -rtc /opt/embedded/ ./ && \
-                find . | cpio -H newc -o | gzip > /opt/images/initrd' \
+                find . | cpio -H newc -o | xz -T0 --check=crc32 > /opt/images/initrd' \
         echo 'Finished with embedding files into uOS, Cleaning up build docker container...'; \
         docker rm -f esp_embedding > /dev/null 2>&1 || true" \
         ${LOG_FILE}

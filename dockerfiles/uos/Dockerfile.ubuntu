@@ -32,7 +32,7 @@ RUN ar x linux-image-unsigned-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
     ar x linux-modules-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
     tar -xf data.tar.zst && \
     ar x linux-modules-extra-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
-    tar -xf data.tar.zst ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/ethernet/ && \
+    tar -xf data.tar.zst ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/ethernet/ ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/phy/ ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/wireless/ && \
     for d in lib/modules/*; do depmod -b . $(basename $d); done && \
     cp boot/vmlinuz* /out/kernel && \
     cp boot/config* /out/kernel_config && \
