@@ -9,6 +9,9 @@
 # source "textutils.sh"
 # source "fleutils.sh"
 
+##### NOTE ####
+# Linuxkit will not compile in Docker version 20.x or later
+
 set -u
 
 export GIT_COMMIT=$(git log -1 --oneline 2> /dev/null | awk '{print $1}')
@@ -64,6 +67,10 @@ if podman -v >/dev/null 2>&1; then
             mkdir -p $(pwd)/lib/docker && \
             docker run -d --privileged --name builder-docker ${DOCKER_RUN_ARGS} -v /tmp/builder:/var/run -v $(pwd)/lib/docker:/var/lib/docker docker:19.03.12-dind && \
             sleep 10 && \
+            docker exec -t builder-docker sh -c '\
+                mkdir /sys/fs/cgroup/systemd && \
+                mount -t cgroup -o none,name=systemd cgroup /sys/fs/cgroup/systemd \
+            ' && \
             docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v $(pwd):/uos -v /tmp/builder:/var/run -v /tmp/host-builder:/tmp/host-docker docker:19.03.12-dind sh -c '\
                 apk update && apk add --no-cache \
                     alpine-sdk \
@@ -110,6 +117,10 @@ else
             docker run -d --privileged --name builder-docker ${DOCKER_RUN_ARGS} -v /tmp/builder:/var/run -v $(pwd)/lib/docker:/var/lib/docker docker:19.03.12-dind && \
             echo 'Waiting for Docker'; \
             while (! docker -H unix:////tmp/builder/docker.sock ps > /dev/null 2>&1); do echo -n '.'; sleep 0.5; done; echo 'ready' && \
+            docker exec -t builder-docker sh -c '\
+                mkdir /sys/fs/cgroup/systemd && \
+                mount -t cgroup -o none,name=systemd cgroup /sys/fs/cgroup/systemd \
+            ' && \
             docker run -t ${DOCKER_RUN_ARGS} --rm -v $(pwd):/uos -v /tmp/builder:/var/run -v /var/run:/tmp/host-docker docker:19.03.12-dind sh -c '\
                 apk update && apk add --no-cache \
                     alpine-sdk \

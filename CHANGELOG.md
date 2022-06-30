@@ -163,6 +163,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fixed default initrd size being to big
 - Fixed Miscellaneous bugs
 
+## [2.5.2] - 2022-06-30
+### Changed
+- Fixed Linuxkit compiling on Ubuntu 22.04
+- Fixed Miscellaneous bugs
+
 
 
 
@@ -177,3 +182,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [2.0.4]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.0.3...v2.0.4
 [2.5.0]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.0.3...v2.5
 [2.5.1]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5...v2.5.1
+[2.5.2]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5.1...v2.5.2
