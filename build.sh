@@ -220,9 +220,19 @@ getSecretInfo
 
 source "scripts/templateutils.sh"
 
-if [[ ! -z "${builder_config_dynamic_profile_enabled+x}" ]];then
+if [[ ! -z "${builder_config_dynamic_profile_enabled+x}" ]]; then
     if [[ "${builder_config_dynamic_profile_enabled}" == "true" ]]; then
         export DYNAMIC_PROFILE="true"
+    fi
+fi
+
+if [[ ! -z "${builder_config_interface+x}" ]]; then
+    ifaceConfig=$(ip a show dev ${builder_config_interface} 2>&1)
+    if [[ ${ifaceConfig} == *"does not exist"* ]]; then
+        printErrMsg "The config.yml 'interface' device '${builder_config_interface}' does not exist"
+        # Remove build lock
+        rm conf/.build.lock 2>/dev/null
+        exit
     fi
 fi
 

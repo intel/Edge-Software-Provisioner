@@ -17,7 +17,7 @@ getMyIp() {
     if [[ -z "${builder_config_interface+x}" ]]; then
         echo $(ip route get 8.8.8.8 | awk '{for(i=1;i<=NF;i++) if ($i=="src") print $(i+1)}')
     else
-        echo $(ip route |grep ${builder_config_interface} |grep src |awk '{for(i=1;i<=NF;i++) if ($i=="src") print $(i+1)}')
+        echo $(ip a show dev ${builder_config_interface} | grep "inet " | awk '$1 ~ /^inet/ { sub("/.*", "", $2); print $2 }')
     fi
 }
 
@@ -25,15 +25,21 @@ getMyDefaultRoute() {
     if [[ -z "${builder_config_interface+x}" ]]; then
         echo $(ip route show | grep -i 'default via'| awk '{print $3 }')
     else
-        echo $(ip route show |grep ${builder_config_interface} |grep src | awk '{print $9}')
+        ifDefaultRoute=$(ip route show dev ${builder_config_interface} | grep -i 'default via'| awk '{print $3 }')
+        if [[ -z "${ifDefaultRoute=x}" ]]; then
+            # if no route is set for this interface then use the IP Address for this interface
+            echo $(getMyIp)
+        else
+            echo ${ifDefaultRoute}
+        fi
     fi
 }
 
 getMyBroadcast() {
     if [[ -z "${builder_config_interface+x}" ]]; then
-        echo $(ip -o -4 addr list $(ip route show 0.0.0.0/0 | awk '{print $5}') | grep brd |  awk '{print $6}')
+        echo $(ip -o -4 addr list $(ip route show 0.0.0.0/0 | awk '{print $5}') | grep brd | sed -e 's/^.* brd \([0-9\.]*\) .*$/\1/' )
     else
-        echo $(ip -o -4 addr list ${builder_config_interface} |grep brd | awk '{print $6}')
+        echo $(ip -o -4 addr list ${builder_config_interface} | grep brd | sed -e 's/^.* brd \([0-9\.]*\) .*$/\1/')
     fi
 }
 

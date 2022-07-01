@@ -166,6 +166,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [2.5.2] - 2022-06-30
 ### Changed
 - Fixed Linuxkit compiling on Ubuntu 22.04
+- Fixed net detection for Ubuntu 22.04
 - Fixed Miscellaneous bugs
 
 
