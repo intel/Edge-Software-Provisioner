@@ -55,11 +55,11 @@ if podman -v >/dev/null 2>&1; then
         docker exec -i hostbuilder-docker docker tag localhost/uos/firmware-wifi:v1.0 uos/firmware-wifi:v1.0" \
         ../../${LOG_FILE}
     run "(5/12) Compiling tools" \
-        "if docker images | grep uosbuilder:${GIT_COMMIT}; then \
-            echo 'uosbuilder exists'; \
+        "if docker images | grep builder-uos:${GIT_COMMIT}; then \
+            echo 'builder-uos exists'; \
         else \
             if docker images | grep builder-uos; then \
-                docker rmi -f $(docker images | grep uosbuilder | awk '{print $3}'); \
+                docker rmi -f $(docker images | grep builder-uos | awk '{print $3}'); \
             fi; \
             docker rm -f builder-docker >/dev/null 2>&1; \
             rm -fr /tmp/builder && \
@@ -78,15 +78,15 @@ if podman -v >/dev/null 2>&1; then
                     wget && \
                 git clone https://github.com/linuxkit/linuxkit --branch v0.8 && cd linuxkit/ && git checkout ad809fa3b6d133a04bf4f49f2b1e3b5f77616f6a && cd - && \
                 cd /linuxkit && make && \
-                docker -H unix:///tmp/host-docker/docker.sock build ${DOCKER_BUILD_ARGS} -t uosbuilder:${GIT_COMMIT} -f /uos/Dockerfile . && \
-                docker -H unix:///tmp/host-docker/docker.sock save uosbuilder:${GIT_COMMIT} > /tmp/host-docker/uosbuilder.tar' && \
-            docker load < /tmp/host-builder/uosbuilder.tar
+                docker -H unix:///tmp/host-docker/docker.sock build ${DOCKER_BUILD_ARGS} -t builder-uos:${GIT_COMMIT} -f /uos/Dockerfile . && \
+                docker -H unix:///tmp/host-docker/docker.sock save builder-uos:${GIT_COMMIT} > /tmp/host-docker/builder-uos.tar' && \
+            docker load < /tmp/host-builder/builder-uos.tar
             docker rm -f builder-docker && \
             rm -fr /tmp/builder; \
         fi" \
         ../../${LOG_FILE}
     run "(6/12) Building ESP uOS" \
-        "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v /tmp/host-builder:/var/run -v $(pwd):/uos uosbuilder:${GIT_COMMIT} -c 'cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos.yml' && \
+        "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v /tmp/host-builder:/var/run -v $(pwd):/uos builder-uos:${GIT_COMMIT} -c 'cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos.yml' && \
         docker rm -f hostbuilder-docker && \
         rm -fr /tmp/host-builder" \
         ../../${LOG_FILE}
