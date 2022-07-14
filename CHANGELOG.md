@@ -169,6 +169,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fixed net detection for Ubuntu 22.04
 - Fixed Miscellaneous bugs
 
+## [2.5.3] - 2022-07-14
+### Changed
+- Fixed podman compiling docker images with correct tab
+
 
 
 
@@ -184,3 +188,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [2.5.0]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.0.3...v2.5
 [2.5.1]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5...v2.5.1
 [2.5.2]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5.1...v2.5.2
+[2.5.3]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5.2...v2.5.3
