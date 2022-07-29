@@ -19,7 +19,7 @@ RUN apk --no-cache add  \
 
 RUN mkdir -p /opt/core/conf /opt/core/data/srv /opt/core/scripts /opt/core/dockerfiles && \
     mkdir -p /usr/local/bin && \
-    wget -O /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)" && \
+    wget -O /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/v2.8.0/docker-compose-$(uname -s)-$(uname -m)" && \
     chmod a+x /usr/local/bin/docker-compose && \
     mkdir -p /usr/share/ipxe && \
     wget -O /usr/share/ipxe/ipxe.lkrn https://boot.ipxe.org/ipxe.lkrn && \
