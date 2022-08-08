@@ -4,7 +4,7 @@
 FROM alpine:3.12 as kernel-builder
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
-ARG FIRMWARE=1.187.32_all
+ARG FIRMWARE=1.187.33_all
 
 RUN apk update && apk add --no-cache \
     bash \
