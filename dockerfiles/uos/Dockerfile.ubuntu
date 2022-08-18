@@ -1,7 +1,7 @@
 # Copyright (C) 2020 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM alpine:3.12 as kernel-builder
+FROM alpine:3.14 as kernel-builder
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
 ARG UBUNTU_RELEASE=5.15.0-25-generic
@@ -15,7 +15,8 @@ RUN apk update && apk add --no-cache \
     rpm \
     cpio \
     binutils \
-    zstd
+    zstd \
+    xz
 
 WORKDIR /build
 RUN mkdir /out
@@ -32,7 +33,20 @@ RUN ar x linux-image-unsigned-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
     ar x linux-modules-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
     tar -xf data.tar.zst && \
     ar x linux-modules-extra-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
-    tar -xf data.tar.zst ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/ethernet/ ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/phy/ ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/wireless/ && \
+    tar -xf data.tar.zst \
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/ethernet/ \
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/gpu/ \
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/video/ \
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/phy/ \
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/wireless/ \
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/misc/mei/ \
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/mmc/ \
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/media/mmc/ \
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/scsi/ \
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/ata/ \
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/block/ \
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/usb/ \
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/virtio/ && \
     for d in lib/modules/*; do depmod -b . $(basename $d); done && \
     cp boot/vmlinuz* /out/kernel && \
     cp boot/config* /out/kernel_config && \
