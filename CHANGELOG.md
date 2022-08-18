@@ -173,7 +173,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - Fixed podman compiling docker images with correct tab
 
-
+## [2.5.4] - 2022-08-18
+### Changed
+- Added missing block device drivers for ESP uOS
+- Updated alpine version for kernel builder
+- Improved method for downloading latest kernel firmware
+- Fixed Miscellaneous bugs
 
 
 [1.5.1]: https://github.com/intel/Edge-Software-Provisioner/compare/v1.5...v1.5.1
@@ -189,3 +194,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [2.5.1]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5...v2.5.1
 [2.5.2]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5.1...v2.5.2
 [2.5.3]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5.2...v2.5.3
+[2.5.4]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5.3...v2.5.4
