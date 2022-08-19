@@ -105,7 +105,7 @@ Target Devices will be connected on the same LAN as the Edge Software Provisione
 
   NOTE: Please read [Network Setup](#network-setup) above before proceeding.  If using Ubuntu, do not use Snapd Docker, install Docker using aptitude.  Dnsmasq must not been running on the system from some other service.  Please confirm with `ps -auxww | grep dnsmasq`.
 
-  This guide will help build and run the Edge Software Provisioner docker images.  Depending on the compute power, it will take roughly 5 to 10 minutes to build the images.  To avoid building images every time you install, it suggested to build the images and then publish the images to a container registy.  Following this guide will give you some example steps and tooling to help push the images up to a registry.
+  This guide will help build and run the Edge Software Provisioner docker images.  Depending on the compute power, it will take roughly 5 to 10 minutes to build the images.  To avoid building images every time you install, it suggested to build the images and then publish the images to a container registry.  Following this guide will give you some example steps and tooling to help push the images up to a registry.
 
   1. ALL the following commands must run as ROOT.  Type `sudo su -` and the your password before proceeding.  (DO NOT prepend sudo to every command.  `sudo su -` means load root environment versus sudo prepended uses your user's environment to the run commands.)
   ```bash
