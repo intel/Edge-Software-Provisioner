@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2020 Intel Corporation
+# Copyright (C) 2021 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
 set -u
@@ -31,8 +31,10 @@ printHelp() {
     printMsg " You can specify one the following options:"
     printMsg "  ${T_BOLD}-p${T_RESET}, --profile              Build USB bootable image for the specified Profile. The image will be located in data/usr/share/nginx/html/usb/(Profile Name)/.  If omitted it will build menu system to select a profile from the USB stick."
     printMsg "  ${T_BOLD}-b${T_RESET}, --bios                 Set USB bootable stick to legacy BIOS or EFI, valid options [ efi | bios ].  Defaults to efi."
+    printMsg "  ${T_BOLD}-l${T_RESET}, --bootloader           Set USB bootable stick bootloader to IPXE or SYSLINUX, valid options [ ipxe | syslinux ].  Defaults to syslinux."
     printMsg "  ${T_BOLD}-d${T_RESET}, --dev                  Path to usb devices, for example '/dev/sdc'. WARNING: this will wipe out the target device.  If omitted it will provide instructions how to flash a USB device."
     printMsg "  ${T_BOLD}-m${T_RESET}, --skip-memory          Skip system memory check."
+    printMsg "  ${T_BOLD}-n${T_RESET}, --skip-net             Skips network autodetection and verification"
     printMsg "  ${T_BOLD}-g${T_RESET}, --random               Generate a random name for the image."
     printMsg "  ${T_BOLD}-h${T_RESET}, --help                 Show this help dialog"
     printMsg ""
@@ -43,9 +45,11 @@ printHelp() {
 
 export USB_PROFILE=""
 export USB_BIOS="efi"
+export USB_BOOTLOADER="syslinux"
 export USB_DEV=""
 export USB_RANDOM="false"
 export SKIP_MEMORY="false"
+export SKIP_NET="false"
 export SINGLE_PROFILE=""
 while (( "$#" )); do
     case "$1" in
@@ -53,9 +57,13 @@ while (( "$#" )); do
                                             shift 2;;
         "-b" | "--bios"                )    export USB_BIOS=$2
                                             shift 2;;
+        "-l" | "--bootloader"          )    export USB_BOOTLOADER=$2
+                                            shift 2;;
         "-d" | "--dev"                 )    export USB_DEV=$2
                                             shift 2;;
         "-m" | "--skip-memory"         )    export SKIP_MEMORY="true"
+                                            shift 1;;
+        "-n" | "--skip-net"            )    export SKIP_NET="true"
                                             shift 1;;
         "-g" | "--random"              )    export USB_RANDOM="true"
                                             shift 1;;
@@ -108,6 +116,13 @@ printMsg " ${T_BOLD}${C_BLUE}Welcome to Make USB${T_RESET}"
 printMsg "-------------------------"
 logMsg "Welcome to Make USB"
 parseConfig
+if [[ "${SKIP_NET}" == "true" ]]; then
+    printBanner "Skipping ${C_GREEN}Network Config Check..."
+    logMsg "Skipping Network Config Check..."
+else
+    printBanner "Checking ${C_GREEN}Network Config..."
+    logMsg "Checking Network Config..."
+fi
 verifyNetworkConfig
 printMsg ""
 printMsg ""
@@ -121,13 +136,17 @@ else
     source "scripts/buildUOS.sh"
 fi
 
-# Verifiy uOS Images are built, if not run build process
-if (docker images | grep uos/wlan > /dev/null 2>&1); then
-    logMsg "uos/wlan is in the local image database."
+if [[ "${builder_config_disable_uos_wifi-x}" == "true" ]]; then
+    logMsg "Skipping building Micro OS (uOS)"
 else
-    printBanner "Building ${C_GREEN}Micro OS (uOS)..."
-    logMsg "Building Micro OS (uOS)..."
-    source "scripts/buildUOS.sh"
+    # Verifiy uOS Images are built, if not run build process
+    if (docker images | grep uos/wlan > /dev/null 2>&1); then
+        logMsg "uos/wlan is in the local image database."
+    else
+        printBanner "Building ${C_GREEN}Micro OS (uOS)..."
+        logMsg "Building Micro OS (uOS)..."
+        source "scripts/buildUOS.sh"
+    fi
 fi
 
 if [ -n "${USB_PROFILE}" ]; then

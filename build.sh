@@ -33,6 +33,8 @@ printHelp() {
     printMsg "  ${T_BOLD}-s${T_RESET}, --skip-build-uos       Skips building the Micro Operating System (uOS)"
     printMsg "  ${T_BOLD}-S${T_RESET}, --skip-image-builds    Skips building all images and uOS"
     printMsg "  ${T_BOLD}-e${T_RESET}, --skip-image-embedded  Skips embedding custom files into uOS"
+    printMsg "  ${T_BOLD}-n${T_RESET}, --skip-net             Skips network autodetection and verification"
+    printMsg "  ${T_BOLD}-g${T_RESET}, --skip-git             Skips starting Gitea service"
     printMsg "  ${T_BOLD}-k${T_RESET}, --uos-kernel           Valid input value is [ intel | intel.signed | clearlinux | ubuntu | ubuntu.signed | fedora | redhat | alpine ].  Defaults to 'intel'. 'redhat' requires a licensed rhel system."
     printMsg "  ${T_BOLD}-c${T_RESET}, --clean-uos            will clean the intermediary docker images used during building of uOS"
     printMsg "  ${T_BOLD}-b${T_RESET}, --skip-backups         Skips the creation of backup files inside the data directory when re-running build.sh"
@@ -56,6 +58,8 @@ export SKIP_BACKUPS="false"
 export SKIP_PROFILES="false"
 export SKIP_PROFILE_BUILDS="false"
 export SKIP_PROFILE_EMBEDDED="false"
+export SKIP_NET="false"
+export SKIP_GIT="false"
 export SINGLE_PROFILE=""
 export BOOT_PROFILE=""
 export FROM_CONTAINER="false"
@@ -80,6 +84,10 @@ while (( "$#" )); do
         "-e" | "--skip-profile-embedded" )  export SKIP_PROFILE_EMBEDDED="true"
                                             shift 1;;
         "-P" | "--skip-profiles"       )    export SKIP_PROFILES="true"
+                                            shift 1;;
+        "-n" | "--skip-net"            )    export SKIP_NET="true"
+                                            shift 1;;
+        "-g" | "--skip-git"            )    export SKIP_GIT="true"
                                             shift 1;;
         "-k" | "--uos-kernel"          )    export UOS_KERNEL=$2
                                             shift 2;;
@@ -165,7 +173,7 @@ fi
 if [[ "${PUSH}" != "" ]]; then
     export BUILD_IMAGES="false"
     export SKIP_PROFILES="true"
-    if (docker images | grep ${PUSH}/builder-core >/dev/null 2>&1); then
+    if (docker images | grep ${PUSH}/builder-core > /dev/null 2>&1); then
         printBanner "Pushing container images. (NOTE: run 'docker login' first if login required otherwise this command will fail.)"
         logMsg "Pushing container images..."
         for image in $(docker images | grep ${PUSH}/builder- | grep -v none | awk '{print $1}'); do 
@@ -221,7 +229,10 @@ getSecretInfo
 source "scripts/templateutils.sh"
 
 if [[ ! -z "${builder_config_dynamic_profile_enabled+x}" ]]; then
-    if [[ "${builder_config_dynamic_profile_enabled}" == "true" ]]; then
+    if [[ "${builder_config_disable_dyn_profile-x}" == "true" ]] && [[ "${builder_config_dynamic_profile_enabled}" == "true" ]]; then
+        printErrMsg "Dynamic Profile is enabled in 'conf/config.yml' but 'disable_dyn_profile' container build is set to 'true'.  Please set 'disable_dyn_profile' to 'false' and run './build.sh -S' again."
+        exit
+    elif [[ "${builder_config_dynamic_profile_enabled}" == "true" ]]; then
         export DYNAMIC_PROFILE="true"
     fi
 fi
@@ -326,52 +337,72 @@ if [[ "${BUILD_IMAGES}" == "true" ]]; then
     # reduces the footprint of our application
 
     # Build the aws-cli image
-    run "(1/12) Building builder-aws-cli" \
-        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-aws-cli dockerfiles/aws-cli" \
-        ${LOG_FILE}
-
-    # Build the wget image
-    run "(2/12) Building builder-wget" \
-        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-wget dockerfiles/wget" \
-        ${LOG_FILE}
+    if [[ "${builder_config_disable_aws_cli-x}" == "true" ]]; then
+        printMsg "(1/11) SKIPPING: Building builder-aws-cli"
+        logMsg "(1/11) SKIPPING: Building builder-aws-cli"
+    else
+        run "(1/11) Building builder-aws-cli" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-aws-cli dockerfiles/aws-cli" \
+            ${LOG_FILE}
+    fi
 
     # Build the git image
-    run "(3/12) Building builder-git" \
+    run "(2/11) Building builder-git" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-git dockerfiles/git" \
         ${LOG_FILE}
 
     # Build the dnsmasq image
-    run "(4/12) Building builder-dnsmasq (~10 min)" \
-        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-dnsmasq dockerfiles/dnsmasq" \
-        ${LOG_FILE}
+    if [[ "${builder_config_disable_dnsmasq-x}" == "true" ]]; then
+        printMsg "(3/11) SKIPPING: Building builder-dnsmasq"
+        logMsg "(3/11) SKIPPING: Building builder-dnsmasq"
+    else
+        run "(3/11) Building builder-dnsmasq (~10 min)" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-dnsmasq dockerfiles/dnsmasq" \
+            ${LOG_FILE}
+    fi
 
     # Build the squid image
-    run "(5/12) Building builder-squid" \
+    run "(4/11) Building builder-squid" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-squid dockerfiles/squid" \
         ${LOG_FILE}
 
     # Build the web image
-    run "(6/12) Building builder-web" \
+    run "(5/11) Building builder-web" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-web dockerfiles/nginx" \
         ${LOG_FILE}
 
     # Build the gitea image
-    run "(7/12) Building builder-gitea" \
-        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-gitea dockerfiles/gitea" \
-        ${LOG_FILE}
+    if [[ "${builder_config_disable_gitea-x}" == "true" ]]; then
+        printMsg "(6/11) SKIPPING: Building builder-gitea"
+        logMsg "(6/11) SKIPPING: Building builder-gitea"
+    else
+        run "(6/11) Building builder-gitea" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-gitea dockerfiles/gitea" \
+            ${LOG_FILE}
+    fi
 
     # Build the qemu image
-    run "(8/12) Building builder-qemu" \
-        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-qemu dockerfiles/qemu" \
-        ${LOG_FILE}
+    if [[ "${builder_config_disable_qemu-x}" == "true" ]]; then
+        printMsg "(7/11) SKIPPING: Building builder-qemu"
+        logMsg "(7/11) SKIPPING: Building builder-qemu"
+    else
+        run "(7/11) Building builder-qemu" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-qemu dockerfiles/qemu" \
+            ${LOG_FILE}
+    fi
 
     # Build the smb image
-    run "(9/12) Building builder-smb" \
-        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-smb dockerfiles/smb" \
-        ${LOG_FILE}
+    if [[ "${builder_config_disable_smb-x}" == "true" ]]; then
+        printMsg "(8/11) SKIPPING: Building builder-smb"
+        logMsg "(8/11) SKIPPING: Building builder-smb"
+    else
+        run "(8/11) Building builder-smb" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-smb dockerfiles/smb" \
+            ${LOG_FILE}
+    fi
 
     # Build the core image
-    run "(10/12) Building builder-core" \
+    run "(9/11) Building builder-core" \
         "docker run -t --rm ${DOCKER_RUN_ARGS} --privileged -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
         cd /work && \
         mkdir -p dockerfiles/core/files/conf/ && \
@@ -381,31 +412,48 @@ if [[ "${BUILD_IMAGES}" == "true" ]]; then
         rsync -rtc ./scripts ./dockerfiles/core/files/ && \
         rsync -rtc ./template ./dockerfiles/core/files/ && \
         rsync -rtc ./*.sh ./dockerfiles/core/files/ && \
-        mkdir -p ./dockerfiles/core/files/data/srv/tftp/images/ && \
-        rsync -rtc ./data/srv/tftp/images/uos ./dockerfiles/core/files/data/srv/tftp/images/'; \
+        mkdir -p ./dockerfiles/core/files/data/srv/tftp/images/uos/ && \
+        rsync -rtc ./data/srv/tftp/images/uos/initrd ./dockerfiles/core/files/data/srv/tftp/images/uos/initrd && \
+        rsync -rtc ./data/srv/tftp/images/uos/vmlinuz ./dockerfiles/core/files/data/srv/tftp/images/uos/vmlinuz'; \
         docker build --rm ${DOCKER_BUILD_ARGS} -t builder-core dockerfiles/core" \
         ${LOG_FILE}
 
     # Build the certbot image
-    run "(11/12) Building builder-certbot" \
-        "docker run -t --rm ${DOCKER_RUN_ARGS} --privileged -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
-        cd /work && \
-        rsync -rtc ./scripts ./dockerfiles/certbot/'; \
-        docker build --rm ${DOCKER_BUILD_ARGS} -t builder-certbot dockerfiles/certbot" \
-        ${LOG_FILE}
+    if [[ "${builder_config_disable_certbot-x}" == "true" ]]; then
+        printMsg "(10/11) SKIPPING: Building builder-certbot"
+        logMsg "(10/11) SKIPPING: Building builder-certbot"
+    else
+        run "(10/11) Building builder-certbot" \
+            "docker run -t --rm ${DOCKER_RUN_ARGS} --privileged -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
+            cd /work && \
+            rsync -rtc ./scripts ./dockerfiles/certbot/'; \
+            docker build --rm ${DOCKER_BUILD_ARGS} -t builder-certbot dockerfiles/certbot" \
+            ${LOG_FILE}
+    fi
 
     # Build the dynamic profile image
-    run "(12/12) Building dynamic profile service" \
-        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-dyn-profile dockerfiles/dyn-profile" \
-        ${LOG_FILE}
+    if [[ "${builder_config_disable_dyn_profile-x}" == "true" ]]; then
+        printMsg "(11/11) SKIPPING: Building builder-dyn-profile"
+        logMsg "(11/11) SKIPPING: Building builder-dyn-profile"
+    else
+        run "(11/11) Building dynamic profile service" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-dyn-profile dockerfiles/dyn-profile" \
+            ${LOG_FILE}
+    fi
 
 else
     printDatedInfoMsg "Skipping Build of ${C_GREEN}Utility Images..."
     logMsg "Skipping Build of Utility Images..."
 fi
 
-printBanner "Checking ${C_GREEN}Network Config..."
-logMsg "Checking Network Config..."
+
+if [[ "${SKIP_NET}" == "true" ]]; then
+    printBanner "Skipping ${C_GREEN}Network Config Check..."
+    logMsg "Skipping Network Config Check..."
+else
+    printBanner "Checking ${C_GREEN}Network Config..."
+    logMsg "Checking Network Config..."
+fi
 # This function will ensure that the config options for
 # network options that users can specify in conf/config.yml
 # are set to _something_ non-empty.
@@ -416,9 +464,15 @@ verifyNetworkConfig
 # files for a profile, rendering templates for a profile, etc.
 source "scripts/profileutils.sh"
 source "scripts/pxemenuutils.sh"
-printBanner "Starting ${C_GREEN}Gitea..."
-logMsg "Starting Gitea..."
-startGitea
+
+if [[ "${SKIP_GIT}" == "true" ]] || [[ "${builder_config_disable_gitea-x}" == "true" ]]; then
+    printBanner "Skipping ${C_GREEN}Starting Gitea..."
+    logMsg "Skipping Starting Gitea..."
+else
+    printBanner "Starting ${C_GREEN}Gitea..."
+    logMsg "Starting Gitea..."
+    startGitea
+fi
 
 if [[ "${SKIP_PROFILES}" == "false" ]]; then
     printBanner "Synchronizing ${C_GREEN}Profiles..."
@@ -435,22 +489,29 @@ printBanner "Rendering ${C_GREEN}System Templates..."
 logMsg "Rendering System Templates..."
 
 if [[ "${DYNAMIC_PROFILE}" == "false" ]]; then
-  # Begin the process of generating a temporary
-  # pxelinux.cfg/default file
-  printBanner "Generating ${C_GREEN}PXE Menu..."
-  logMsg "Generating PXE Menu..."
-  genPxeMenuHead
-  profilesActions genProfilePxeMenu
-  genPxeMenuTail
+    # Begin the process of generating a temporary
+    # pxelinux.cfg/default file
+    printBanner "Generating ${C_GREEN}PXE Menu..."
+    logMsg "Generating PXE Menu..."
+    genPxeMenuHead
+    profilesActions genProfilePxeMenu
+    genPxeMenuTail
 
-  renderSystemNetworkTemplates
-  updatePxeMenu
+    logMsg "Generating IPXE Menu..."
+    genIpxeMenuHead
+    profilesActions genProfileIpxeMenu
+    genIpxeMenuMiddle
+    profilesActions genProfileIpxeGoto
+
+    renderSystemNetworkTemplates
+    updatePxeMenu
+    updateIpxeMenu
 else
-  source "scripts/dynamicprofile.sh"
-  logMsg "Setting up DynamicProfile without PXE boot menu..."
-  renderSystemNetworkTemplates
-  setDynamicProfileArgs
-  exportProfileInfo
+    source "scripts/dynamicprofile.sh"
+    logMsg "Setting up DynamicProfile without PXE boot menu..."
+    renderSystemNetworkTemplates
+    setDynamicProfileArgs
+    exportProfileInfo
 fi
 # Finishing message
 printBanner "${C_GREEN}Build Complete!"

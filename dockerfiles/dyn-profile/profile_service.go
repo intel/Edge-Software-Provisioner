@@ -53,13 +53,14 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
     getHardwareStruct()
     json.NewDecoder(r.Body).Decode(&hw)
     for _, v := range hardwares.Hardwares {
-      if v.MacAddress == hw.MacAddress {
-	data := make(map[string]interface{})
-	data["url"] = v.BootUrl
-	data["basebranch"] = v.BaseBranch
-	data["kernelParams"] = v.KernelArgs
-	js, _ = json.Marshal(data)
-	stat = http.StatusOK
+      if strings.ToLower(v.MacAddress) == strings.ToLower(hw.MacAddress) {
+        data := make(map[string]interface{})
+        data["url"] = v.BootUrl
+        data["basebranch"] = v.BaseBranch
+        data["kernelParams"] = v.KernelArgs
+        js, _ = json.Marshal(data)
+        stat = http.StatusOK
+        break
       }
     }
     w.WriteHeader(stat)
@@ -117,7 +118,6 @@ func getHardwareStruct() (error) {
     err = cmd.Run()
     if err != nil {
       log.Println("no base branch for " + hardwares.Hardwares[i].ProfileUrl + " found on server, leave that empty")
-      return  err
     } else {
        hardwares.Hardwares[i].BaseBranch = hardwares.Hardwares[i].ProfileUrl+"_base"
     }

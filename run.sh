@@ -11,6 +11,7 @@ if [[ $(id -u) -ne 0 ]]; then
 fi
 
 source "scripts/textutils.sh"
+source "scripts/fileutils.sh"
 
 printHelp() {
     printMsg "\n ${T_BOLD}${C_BLUE}Run Script${T_RESET}"
@@ -54,6 +55,7 @@ printMsg " ${T_BOLD}${C_BLUE}Welcome${T_RESET}"
 printMsg "-------------------------"
 logMsg "Welcome to the builder host run script"
 
+parseConfig
 
 if [[ "${DOWN}" == "true" ]]; then
     printDatedInfoMsg "Stopping containers..."
@@ -101,22 +103,37 @@ else
         sync >/dev/null 2>&1
     fi
 
-    if [[ "${NO_DNSMASQ}" == "false" ]]; then
-        printDatedInfoMsg "Starting dnsmasq container..."
-        logMsg "run.sh bringing up containers"
-        if podman -v >/dev/null 2>&1; then
-            scripts/espctl.sh up dnsmasq
-        else
-            docker-compose up -d dnsmasq
+    if [[ "${builder_config_disable_dnsmasq-false}" == "false" ]]; then
+        if [[ "${NO_DNSMASQ}" == "false" ]]; then
+            printDatedInfoMsg "Starting dnsmasq container..."
+            logMsg "run.sh bringing up containers"
+            if podman -v >/dev/null 2>&1; then
+                scripts/espctl.sh up dnsmasq
+            else
+                docker-compose up -d dnsmasq
+            fi
+            printDatedInfoMsg "Waiting a moment before starting the remaining containers..."
+            sleep 3
         fi
-        printDatedInfoMsg "Waiting a moment before starting the remaining containers..."
-        sleep 3
     fi
 
     if podman -v >/dev/null 2>&1; then
         scripts/espctl.sh up --no-dnsmasq
     else
-        docker-compose up -d core web certbot registry-mirror squid mirror smb dyn-profile
+        DOCKER_COMPOSE_SERVICES="core web registry-mirror squid"
+        if [[ "${builder_config_disable_certbot-false}" == "false" ]]; then
+            DOCKER_COMPOSE_SERVICES="${DOCKER_COMPOSE_SERVICES} certbot"
+        fi
+        if [[ "${builder_config_disable_gitea-false}" == "false" ]]; then
+            DOCKER_COMPOSE_SERVICES="${DOCKER_COMPOSE_SERVICES} mirror"
+        fi
+        if [[ "${builder_config_disable_smb-false}" == "false" ]]; then
+            DOCKER_COMPOSE_SERVICES="${DOCKER_COMPOSE_SERVICES} smb"
+        fi
+        if [[ "${builder_config_dynamic_profile__enabled-x}" == "true" ]]; then
+            DOCKER_COMPOSE_SERVICES="${DOCKER_COMPOSE_SERVICES} dyn-profile"
+        fi
+        docker-compose up -d ${DOCKER_COMPOSE_SERVICES}
     fi
 fi
 

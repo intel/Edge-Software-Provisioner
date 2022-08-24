@@ -158,7 +158,7 @@ Target Devices will be connected on the same LAN as the Edge Software Provisione
   docker-compose up -d
   ```
 
-  To simplify further, you can use the example `examples/deply.sh` script to deploy Edge Software Provisioner in a one line command like the following example command (NOTE: you must move deploy.sh and the docker-compose.yml into your github repo for the following to work):
+  To simplify further, you can use the example `examples/deploy.sh` script to deploy Edge Software Provisioner in a one line command like the following example command (NOTE: you must move deploy.sh and the docker-compose.yml into your github repo for the following to work):
   ```bash
   wget -O- https://github.com/myuser/esp/raw/branch/master/deploy.sh | bash -s -
   ```

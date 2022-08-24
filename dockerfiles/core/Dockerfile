@@ -9,6 +9,8 @@ RUN apk --no-cache add  \
       dumb-init \
       inotify-tools \
       git \
+      nmap \
+      nmap-scripts \
       rsync \
       syslinux \
       wget && \

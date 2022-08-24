@@ -44,19 +44,26 @@ if podman -v >/dev/null 2>&1; then
         cd /uos && \
         docker build --rm ${DOCKER_BUILD_ARGS} -t uos/dyninit:v1.0 -f ./Dockerfile.dyninit .'" \
         ../../${LOG_FILE}
-    run "(3/12) Building WiFi Tools" \
-        "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v $(pwd):/uos -v /tmp/host-builder:/var/run docker:19.03.12-dind sh -c '\
-        cd /uos && \
-        docker build --rm ${DOCKER_BUILD_ARGS} -t uos/wlan:v1.0 dockerfiles/wlan'" \
-        ../../${LOG_FILE}
-    run "(4/12) Building WiFi Firmware" \
-        "podman build --rm ${DOCKER_BUILD_ARGS} -t uos/firmware-wifi:v1.0 -f ./dockerfiles/firmware/Dockerfile.${UOS_KERNEL} dockerfiles/firmware && \
-        podman save uos/firmware-wifi:v1.0 | docker exec -i hostbuilder-docker docker load && \
-        docker exec -i hostbuilder-docker docker tag localhost/uos/firmware-wifi:v1.0 uos/firmware-wifi:v1.0" \
-        ../../${LOG_FILE}
+    if [[ "${builder_config_disable_uos_wifi-x}" == "true" ]]; then
+        printMsg "(3/12) Skipping WiFi Tools"
+        logMsg "(3/12) Skipping WiFi Tools"
+        printMsg "(4/12) Skipping WiFi Tools"
+        logMsg "(4/12) Skipping WiFi Tools"
+    else 
+        run "(3/12) Building WiFi Tools" \
+            "docker run -t --rm --privileged ${DOCKER_RUN_ARGS} -v $(pwd):/uos -v /tmp/host-builder:/var/run docker:19.03.12-dind sh -c '\
+            cd /uos && \
+            docker build --rm ${DOCKER_BUILD_ARGS} -t uos/wlan:v1.0 dockerfiles/wlan'" \
+            ../../${LOG_FILE}
+        run "(4/12) Building WiFi Firmware" \
+            "podman build --rm ${DOCKER_BUILD_ARGS} -t uos/firmware-wifi:v1.0 -f ./dockerfiles/firmware/Dockerfile.${UOS_KERNEL} dockerfiles/firmware && \
+            podman save uos/firmware-wifi:v1.0 | docker exec -i hostbuilder-docker docker load && \
+            docker exec -i hostbuilder-docker docker tag localhost/uos/firmware-wifi:v1.0 uos/firmware-wifi:v1.0" \
+            ../../${LOG_FILE}
+    fi
     run "(5/12) Compiling tools" \
-        "if docker images | grep builder-uos:${GIT_COMMIT}; then \
-            echo 'builder-uos exists'; \
+        "if docker images | grep builder-uos | grep ${GIT_COMMIT} > /dev/null; then \
+            echo \"builder-uos:${GIT_COMMIT} exists\"; \
         else \
             if docker images | grep builder-uos; then \
                 docker rmi -f $(docker images | grep builder-uos | awk '{print $3}'); \
@@ -97,15 +104,22 @@ else
     run "(2/12) Downloading and preparing the initrd" \
         "docker build --rm ${DOCKER_BUILD_ARGS} -t uos/dyninit:v1.0 -f ./Dockerfile.dyninit ." \
         ../../${LOG_FILE}
-    run "(3/12) Building WiFi Tools" \
-        "docker build --rm ${DOCKER_BUILD_ARGS} -t uos/wlan:v1.0 dockerfiles/wlan" \
-        ../../${LOG_FILE}
-    run "(4/12) Building WiFi Firmware" \
-        "docker build --rm ${DOCKER_BUILD_ARGS} -t uos/firmware-wifi:v1.0 -f ./dockerfiles/firmware/Dockerfile.${UOS_KERNEL} dockerfiles/firmware" \
-        ../../${LOG_FILE}
+    if [[ "${builder_config_disable_uos_wifi-x}" == "true" ]]; then
+        printMsg "(3/12) Skipping WiFi Tools"
+        logMsg "(3/12) Skipping WiFi Tools"
+        printMsg "(4/12) Skipping WiFi Firmware"
+        logMsg "(4/12) Skipping WiFi Firmware"
+    else 
+        run "(3/12) Building WiFi Tools" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t uos/wlan:v1.0 dockerfiles/wlan" \
+            ../../${LOG_FILE}
+        run "(4/12) Building WiFi Firmware" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t uos/firmware-wifi:v1.0 -f ./dockerfiles/firmware/Dockerfile.${UOS_KERNEL} dockerfiles/firmware" \
+            ../../${LOG_FILE}
+    fi
     run "(5/12) Compiling tools" \
-        "if docker images | grep builder-uos:${GIT_COMMIT}; then \
-            echo 'builder-uos exists'; \
+        "if docker images | grep builder-uos | grep ${GIT_COMMIT} > /dev/null; then \
+            echo \"builder-uos:${GIT_COMMIT} exists\"; \
         else \
             if docker images | grep builder-uos; then \
                 docker rmi -f \$(docker images | grep builder-uos | awk '{print \$3}'); \

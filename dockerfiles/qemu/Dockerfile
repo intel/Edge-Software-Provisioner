@@ -1,3 +1,6 @@
+# Copyright (C) 2020 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
 FROM alpine:3.13
 LABEL maintainer="Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 

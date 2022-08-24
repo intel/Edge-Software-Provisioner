@@ -180,6 +180,27 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Improved method for downloading latest kernel firmware
 - Fixed Miscellaneous bugs
 
+## [3.0.0] - 2022-08-23
+### Added
+- Added default option of IPXE based booting mechanism which enables a broader spectrum of hardware. 
+- Enabled option for static IP addresses for specific MAC addresses to achieve scaling in farms. 
+- Added option for disabling selected services while building. 
+- Added options for enabling local path Git repository for profiles. 
+
+### Changed
+- Fixed ubuntu/alpine moving firmware retrieval mechanism 
+- Fixed alpine UOS build 
+- Fixed flashing progress on flash.usb 
+- Improved network scanning for DHCP 
+- Reduced the image size of the USB device for flashing  
+- Enhanced Code Quality 
+- Fixed Miscellaneous bugs
+
+### Known Problem
+- Missing instructions of how to build the boot.wim, boot.sdi and BCD from Microsoft ADK
+
+
+
 
 [1.5.1]: https://github.com/intel/Edge-Software-Provisioner/compare/v1.5...v1.5.1
 [1.6.0]: https://github.com/intel/Edge-Software-Provisioner/compare/v1.5.1...v1.6
@@ -195,3 +216,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [2.5.2]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5.1...v2.5.2
 [2.5.3]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5.2...v2.5.3
 [2.5.4]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5.3...v2.5.4
+[3.0.0]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5.4...v3.0

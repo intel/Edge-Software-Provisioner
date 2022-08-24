@@ -54,6 +54,26 @@
 #   user: ""
 #   token: ""
 
+# This section is used to enable the support to assign fixed ip addresses based on mac addresses.
+# The template array below shows how it should be configured. The dnsmasq.conf file of ESP will 
+# then be adapted to have the "dhcp-host" entries.
+
+# ip_mapping:
+#   - mac: 00:11:22:33:44:55
+#     ip: 192.168.100.200
+#   - mac: 01:12:23:24:25:26
+#     ip: 192.168.100.220
+
+# This section is used to disable services not being used. By default they are all enabled.
+# disable_uos_wifi: false
+# disable_gitea: false
+# disable_aws_cli: false
+# disable_qemu: false
+# disable_smb: false
+# disable_certbot: false
+# disable_dnsmasq: false
+# disable_dyn_profile: false
+
 # Please make sure to define ALL of the variables below, even if they
 # are empty. Otherwise, this application will not be configured properly.
 profiles:

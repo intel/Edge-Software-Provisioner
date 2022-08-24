@@ -281,7 +281,7 @@ downloadBaseOSFile() {
     local target_dir="/srv/tftp/images/${profileName}"
 
     run "${message}" \
-        "docker run --rm ${DOCKER_RUN_ARGS} -v ${TFTP_IMAGES}/${profileName}:/tmp/files -w /tmp/files builder-wget wget ${url} -c -O ${filename}" \
+        "docker run --rm ${DOCKER_RUN_ARGS} -v ${TFTP_IMAGES}/${profileName}:/tmp/files -w /tmp/files --entrypoint="" builder-core wget ${url} -c -O ${filename}" \
         ${LOG_FILE}
 }
 
@@ -295,12 +295,12 @@ downloadPublicFile() {
     if [[ -z "${token}" || ${token} == "None" ]]; then
         # If the token is not given, don't supply any token headers
         run "${message}" \
-            "docker run --rm ${DOCKER_RUN_ARGS} -v ${directory}:/tmp/files -w /tmp/files builder-wget wget ${source} -c -O ${fileName}" \
+            "docker run --rm ${DOCKER_RUN_ARGS} -v ${directory}:/tmp/files -w /tmp/files --entrypoint="" builder-core wget ${source} -c -O ${fileName}" \
             ${LOG_FILE}
     else
         # The token is defined, so supply the token headers
         run "${message}" \
-            "docker run --rm ${DOCKER_RUN_ARGS} -v ${directory}:/tmp/files -w /tmp/files builder-wget wget --header 'Authorization: token ${token}' ${source} -c -O ${fileName}" \
+            "docker run --rm ${DOCKER_RUN_ARGS} -v ${directory}:/tmp/files -w /tmp/files --entrypoint="" builder-core wget --header 'Authorization: token ${token}' ${source} -c -O ${fileName}" \
             ${LOG_FILE}
     fi
 }
@@ -359,11 +359,11 @@ mirrorGitRepo() {
     local repo_name=$6
     local profile_name=$7
 
-    local workingdir=./tmp_repo
+    local workingdir=$(pwd)/tmp_repo
     mkdir -p ${workingdir}
 
     local ourl=${url}
-    if [ -z "${username}" ]; then
+    if [ ! -z "${username}" ]; then
         local auth="${username}:${token}@"
         local url=$(echo ${url} | sed "s#http://#http://${auth})#" | sed "s#https://#https://${auth}#")
     fi
@@ -385,11 +385,11 @@ mirrorGitRepo() {
         run "${message}" \
             "cd ${workingdir} && \
             git clone ${args} -b ${branch} ${url} ${repo_name} && \
-            cd - && cd ${workingdir}/${repo_name} && \
+            cd ${workingdir}/${repo_name} && \
             rm -fr .git/ && \
             cd ../ && \
             git clone http://mirror:mirror@${builder_config_host_ip}:3003/mirror/${profile_name}___${repo_name}.git && \
-            docker run -t --rm -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
+            docker run ${DOCKER_RUN_ARGS} -t --rm -v ${workingdir}:/work alpine sh -c 'apk update && apk add --no-cache rsync && \
             cd work/ && \
             rsync -rtc --stats --progress --exclude=.git/ ${repo_name}/ ${profile_name}___${repo_name}/' && \
             cd ${profile_name}___${repo_name}/ && \
@@ -441,7 +441,7 @@ processBuild() {
 
     local message="  Running Build process, this could take a very long time.  In another terminal run 'docker logs ${container_name} -f' to watch progress."
     run "${message}" \
-        "docker run -d --rm --privileged --name build-docker ${DOCKER_RUN_ARGS} -v $(pwd)/data/tmp/build:/var/run -v $(pwd)/data/lib/docker:/var/lib/docker docker:19.03.12-dind && \
+        "docker run -d --rm --privileged --name build-docker ${DOCKER_RUN_ARGS} -v $(pwd)/data/tmp/build:/var/run -v $(pwd)/data/lib/docker:/var/lib/docker docker:20.10.17-dind && \
         sleep 7 && \
         echo 'Waiting for Docker'; \
         if ! docker -H unix:///$(pwd)/data/tmp/build/docker.sock ps > /dev/null ; then

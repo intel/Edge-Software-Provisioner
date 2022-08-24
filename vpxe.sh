@@ -34,6 +34,7 @@ printHelp() {
     printMsg "  ${T_BOLD}-b${T_RESET}, --bios            Valid input value is [ efi ] or leave empty.  Defaults to empty value."
     printMsg "  ${T_BOLD}-o${T_RESET}, --output          Valid input value is [ file | container ].  Defaults to 'file'."
     printMsg "  ${T_BOLD}-p${T_RESET}, --profile         Enter the profile name to build."
+    printMsg "  ${T_BOLD}-n${T_RESET}, --skip-net        Skips network autodetection and verification"
     printMsg "  ${T_BOLD}-h${T_RESET}, --help            Show this help dialog"
     printMsg ""
     printMsg " Usage: $0"
@@ -48,6 +49,7 @@ export OUTPUT="file"
 export VERBOSE="false"
 export BIOS=""
 export SINGLE_PROFILE=""
+export SKIP_NET="false"
 while (( "$#" )); do
     case "$1" in
         "-d" | "--disk-size"           )    export DISK_SIZE=$2
@@ -63,6 +65,8 @@ while (( "$#" )); do
         "-p" | "--profile"             )    export SINGLE_PROFILE=$2
                                             shift 2;;
         "-v" | "--verbose"             )    export VERBOSE="true"
+                                            shift 1;;
+        "-n" | "--skip-net"            )    export SKIP_NET="true"
                                             shift 1;;
         "-h" | "--help"                )    printHelp;;
         "--"                           )    # end argument parsing
@@ -102,6 +106,13 @@ printMsg " ${T_BOLD}${C_BLUE}Welcome to Virtual PXE${T_RESET}"
 printMsg "-------------------------"
 logMsg "Welcome to Virtual PXE"
 parseConfig
+if [[ "${SKIP_NET}" == "true" ]]; then
+    printBanner "Skipping ${C_GREEN}Network Config Check..."
+    logMsg "Skipping Network Config Check..."
+else
+    printBanner "Checking ${C_GREEN}Network Config..."
+    logMsg "Checking Network Config..."
+fi
 verifyNetworkConfig
 printMsg ""
 printMsg ""

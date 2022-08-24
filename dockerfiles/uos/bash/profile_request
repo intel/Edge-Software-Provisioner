@@ -5,7 +5,7 @@
 
 source /opt/bootstrap/functions
 
-export CONSOLE_OUTPUT="/dev/console"
+export CONSOLE_OUTPUT="/dev/kmsg"
 
 kernel_params=$(cat /proc/cmdline)
 
@@ -15,13 +15,13 @@ if [[ $kernel_params = *"httpserver="* ]]; then
 else
   clear 
   echo "" 2>&1 | tee -a ${CONSOLE_OUTPUT}
-  echo "[            ] 'httpserver' kernel parameter missing in profile_request script!"
+  echo "'httpserver' kernel parameter missing in profile_request script!"
   sleep 20
   reboot
 fi
 
-echo "[            ] KERNEL_PARAMS: $kernel_params" 2>&1 |tee -a ${CONSOLE_OUTPUT}
-echo "[            ] param_httpserver: $param_httpserver" 2>&1 |tee -a ${CONSOLE_OUTPUT}
+echo "KERNEL_PARAMS: $kernel_params" 2>&1 |tee -a ${CONSOLE_OUTPUT}
+echo "param_httpserver: $param_httpserver" 2>&1 |tee -a ${CONSOLE_OUTPUT}
 
 param_hwqueries="macaddress cpu"
 
@@ -47,11 +47,11 @@ requests=${requests::-2}
 
 request_line="curl -d '{${requests}}'i -H \"Content-Type: application/json\" -X POST $param_httpserver:8580/hardwares"
 
-echo "[            ] HTTP request: $request_line"  2>&1 | tee -a ${CONSOLE_OUTPUT}
+echo "HTTP request: $request_line"  2>&1 | tee -a ${CONSOLE_OUTPUT}
 
 response=$(eval $request_line)
 
-echo "[            ] HTTP response: $response"  2>&1 | tee -a ${CONSOLE_OUTPUT}
+echo "HTTP response: $response"  2>&1 | tee -a ${CONSOLE_OUTPUT}
 
 profile_url=$(sed 's#.*url":"\([^"{}]*\).*#\1#' <<<$response)
 
@@ -62,8 +62,8 @@ profile_basebranch=$(sed 's#.*basebranch":"\([^"{}]*\).*#\1#' <<<$response)
 
 kernel_params=$(sed "s/##PROFILE##/$profile_name/g" <<<$kernel_params)
 
-echo "[            ] Profile URL: $profile_url"  2>&1 | tee -a ${CONSOLE_OUTPUT}
-echo "[            ] Profile kernel parameters: $kernel_params" 2>&1 |tee -a ${CONSOLE_OUTPUT}
+echo "Profile URL: $profile_url"  2>&1 | tee -a ${CONSOLE_OUTPUT}
+echo "Profile kernel parameters: $kernel_params" 2>&1 |tee -a ${CONSOLE_OUTPUT}
 
 profileparams=$(sed 's#.*kernelParams":"\([^"{}]*\).*#\1#' <<<$response)
 
@@ -71,7 +71,7 @@ profileparams=$profileparams" bootstrap="$profile_url" basebranch="$profile_base
 
 
 kernel_params=$kernel_params" "$profileparams
-echo "[            ] New kernel cmdline to continue with: $kernel_params" 2>&1 |tee -a ${CONSOLE_OUTPUT}
+echo "New kernel cmdline to continue with: $kernel_params" 2>&1 |tee -a ${CONSOLE_OUTPUT}
 
 echo $kernel_params > /tmp/cmdline
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2020 Intel Corporation
+# Copyright (C) 2021 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
 set -u
@@ -241,9 +241,9 @@ else
 fi
 
 if [ -n "${URL}" ]; then
-    wget --show-progress --no-check-certificate -qO - ${URL} | dd obs=1M oflag=direct status=none of=${DEV}
-    MBR_LOCATION=$( echo $URL | awk -F'/' '{print $1}' )//$( echo $URL | awk -F'/' '{print $3}' )/mbr.bin
+    wget --show-progress --progress=bar:force:noscroll --no-check-certificate -qO - ${URL} | dd obs=1M oflag=direct status=none of=${DEV}
     if [ "${BIOS}" ]; then
+        MBR_LOCATION=$( echo $URL | awk -F'/' '{print $1}' )//$( echo $URL | awk -F'/' '{print $3}' )/mbr.bin
         wget --no-check-certificate -qO - ${MBR_LOCATION} | dd bs=440 count=1 conv=notrunc status=none of=${DEV}
     fi
 fi
@@ -254,8 +254,8 @@ if [ -n "${IMAGE}" ]; then
     else
         dd if=${IMAGE} obs=1M oflag=direct status=none of=${DEV}
     fi
-    MBR_LOCATION="data/usr/share/nginx/html/mbr.bin"
     if [ "${BIOS}" ]; then
+        MBR_LOCATION="data/usr/share/nginx/html/mbr.bin"
         dd bs=440 count=1 conv=notrunc status=none if=${MBR_LOCATION} of=${DEV}
     fi
 fi

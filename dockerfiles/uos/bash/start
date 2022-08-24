@@ -5,10 +5,10 @@
 
 rngd -r /dev/urandom
 
-/sbin/udevadm hwdb --update && /
+/sbin/udevadm hwdb --update &&
 /sbin/udevd --debug --daemon
 
-export CONSOLE_OUTPUT="/dev/console"
+export CONSOLE_OUTPUT="/dev/kmsg"
 
 sleep 3
 
@@ -21,10 +21,10 @@ else
   export param_ntp="us.pool.ntp.org"
 fi
 
-echo "[            ] Updating system time..." 2>&1 | tee -a ${CONSOLE_OUTPUT}
+echo "Updating system time..." 2>&1 | tee -a ${CONSOLE_OUTPUT}
 ntpd -d -N -q -n -p ${param_ntp} 2>&1 | tee -a ${CONSOLE_OUTPUT}
 
-echo "[            ] Discovering hardware..." 2>&1 | tee -a ${CONSOLE_OUTPUT}
+echo "Discovering hardware..." 2>&1 | tee -a ${CONSOLE_OUTPUT}
 for f in $(ls /sys/bus/*/devices/*/modalias); do
   if [ -f $f ]; then
     modprobe -abq $(cat $f) >/dev/null 2>&1
@@ -61,10 +61,10 @@ if [[ $kernel_params = *" dynamicprofile="* ]]; then
   export param_dynamicprofile="${tmp%% *}"
 fi
 
-echo "[            ] Cmdline: $kernel_params" 2>&1 | tee -a ${CONSOLE_OUTPUT}
+echo "Cmdline: $kernel_params" 2>&1 | tee -a ${CONSOLE_OUTPUT}
 
 if [[ $param_dynamicprofile == 'true' ]]; then
-  echo "[            ] DYNAMIC PROFILE ACTIVE!! Collecting hardware information" 2>&1 | tee -a ${CONSOLE_OUTPUT}
+  echo "DYNAMIC PROFILE ACTIVE!! Collecting hardware information" 2>&1 | tee -a ${CONSOLE_OUTPUT}
   /opt/bootstrap/profile_request
 fi
 
@@ -78,7 +78,7 @@ fi
 
 while (! docker stats --no-stream > /dev/null ); do
   # Docker takes a few seconds to initialize
-  echo "[            ] Waiting for Docker to launch..." 2>&1 | tee -a ${CONSOLE_OUTPUT}
+  echo "Waiting for Docker to launch..." 2>&1 | tee -a ${CONSOLE_OUTPUT}
   sleep 3
 done
 

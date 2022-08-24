@@ -5,7 +5,7 @@
 
 source /opt/bootstrap/functions
 
-export CONSOLE_OUTPUT="/dev/console"
+export CONSOLE_OUTPUT="/dev/kmsg"
 
 kernel_params=$(cat /proc/cmdline)
 if [[ $kernel_params = *"bootstrap="* ]]; then
@@ -14,7 +14,7 @@ if [[ $kernel_params = *"bootstrap="* ]]; then
 else
 	clear
 	echo "" 2>&1 | tee -a ${CONSOLE_OUTPUT}
-	echo "[            ] 'bootstrap' kernel parameter missing!" 2>&1 | tee -a ${CONSOLE_OUTPUT}
+	echo "'bootstrap' kernel parameter missing!" 2>&1 | tee -a ${CONSOLE_OUTPUT}
 	sleep 30
 	# reboot
 fi
@@ -25,7 +25,7 @@ if [[ $kernel_params = *"httpserver="* ]]; then
 else
 	clear
 	echo "" 2>&1 | tee -a ${CONSOLE_OUTPUT}
-	echo "[            ] 'httpserver' kernel parameter missing!" 2>&1 | tee -a ${CONSOLE_OUTPUT}
+	echo "'httpserver' kernel parameter missing!" 2>&1 | tee -a ${CONSOLE_OUTPUT}
 	sleep 30
 	# reboot
 fi
@@ -59,7 +59,7 @@ if [ $( nc -vz ${param_httpserver} 80; echo $?; ) -ne 0 ] && [ $( nc -vz ${param
 
 		touch /opt/bootstrap/wifi-scan.run
 		until [ -f /opt/bootstrap/wifi-scan.done ]; do
-			echo "[            ] Waiting for wifi-scan to finish."
+			echo "Waiting for wifi-scan to finish." 2>&1 | tee -a ${CONSOLE_OUTPUT}
 			sleep 5
 		done
 	fi

@@ -1,0 +1,21 @@
+#!ipxe
+console --x 800 --y 600 --picture http://@@HOST_IP@@/tftp/pxe_bg.png || goto loadipxe
+
+# Some menu defaults
+set menu-timeout 20000
+isset ${menu-default} || set menu-default local
+
+# Figure out if client is 64-bit capable
+cpuid --ext 29 && set arch x64 || set arch x86
+cpuid --ext 29 && set archl amd64 || set archl i386
+cpuid --ext 29 && set efiarch 64 || set efiarch 32
+
+###################### MAIN MENU ####################################
+
+:menu
+menu Boot Menu ${initiator-iqn}
+item --gap --             --------------------------------------------------------------------------
+item --gap --             ESP Profiles
+item --gap --             -------------------------------------------------------------------------
+item --key l local        l) Boot local hard drive
+item --gap --     

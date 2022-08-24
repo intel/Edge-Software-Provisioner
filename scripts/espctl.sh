@@ -145,70 +145,131 @@ fi
 if [[ "${RESTART}" == "true" ]]; then
   podman restart ${CURDIR}_core_1 2> /dev/null
   podman restart ${CURDIR}_web_1 2> /dev/null
+  podman restart ${CURDIR}_registry-mirror_1 2> /dev/null
+  podman restart ${CURDIR}_squid_1 2> /dev/null
   if podman ps | grep ${CURDIR}_dnsmasq_1 > /dev/null; then
     # Restart only if was up
     podman restart ${CURDIR}_dnsmasq_1 2> /dev/null
   fi
-  podman restart ${CURDIR}_registry-mirror_1 2> /dev/null
-  podman restart ${CURDIR}_squid_1 2> /dev/null
-  podman restart ${CURDIR}_mirror_1 2> /dev/null
-  podman restart ${CURDIR}_smb_1 2> /dev/null
-  podman restart ${CURDIR}_certbot_1 2> /dev/null
-  podman restart ${CURDIR}_dyn-profile_1 2> /dev/null
+  if podman ps | grep ${CURDIR}_mirror_1 > /dev/null; then
+    podman restart ${CURDIR}_mirror_1 2> /dev/null
+  fi
+  if podman ps | grep ${CURDIR}_smb_1 > /dev/null; then
+    podman restart ${CURDIR}_smb_1 2> /dev/null
+  fi
+  if podman ps | grep ${CURDIR}_certbot_1 > /dev/null; then
+    podman restart ${CURDIR}_certbot_1 2> /dev/null
+  fi
+  if podman ps | grep ${CURDIR}_dyn-profile_1 > /dev/null; then
+    podman restart ${CURDIR}_dyn-profile_1 2> /dev/null
+  fi
 fi
 
 if [[ "${UP}" == "true" ]]; then
   if ! docker ps -a | grep ${CURDIR}_core_1 > /dev/null; then
     if [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "core" ]; then
-      podman run -d --privileged --name=${CURDIR}_core_1 --restart=always --network host -e BUILDER_PATH=${PWD} -e PATH=${PWD}:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} --mount type=bind,source=/run,destination=/run --mount type=bind,source=${PWD}/./,destination=${PWD}/root --mount type=bind,source=${PWD}/./conf,destination=${PWD}/conf,bind-propagation=shared --mount type=bind,source=${PWD}/./data,destination=${PWD}/data,bind-propagation=shared --mount type=bind,source=${PWD}/./dockerfiles/uos,destination=${PWD}/dockerfiles/uos,bind-propagation=shared --mount type=bind,source=${PWD}/./output,destination=${PWD}/output,bind-propagation=shared --mount type=bind,source=${PWD}/./template,destination=${PWD}/template,bind-propagation=shared builder-core
+      podman run -d --privileged --name=${CURDIR}_core_1 --restart=always --network host -e BUILDER_PATH=${PWD} -e PATH=${PWD}:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} \
+      --mount type=bind,source=/run,destination=/run \
+      --mount type=bind,source=${PWD}/./,destination=${PWD}/root \
+      --mount type=bind,source=${PWD}/./conf,destination=${PWD}/conf,bind-propagation=shared \
+      --mount type=bind,source=${PWD}/./data,destination=${PWD}/data,bind-propagation=shared \
+      --mount type=bind,source=${PWD}/./dockerfiles/uos,destination=${PWD}/dockerfiles/uos,bind-propagation=shared \
+      --mount type=bind,source=${PWD}/./output,destination=${PWD}/output,bind-propagation=shared \
+      --mount type=bind,source=${PWD}/./template,destination=${PWD}/template,bind-propagation=shared builder-core
     fi
   fi
 
   if ! docker ps -a | grep ${CURDIR}_web_1 > /dev/null; then
     if [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "web" ]; then
-      podman run -d --privileged --name=${CURDIR}_web_1 --restart=always -p 80:80 -p 443:443 -e CN=edgebuilder.local -e O=edgebuilder -e OU=edgebuilder -e C=US -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} --mount type=bind,source=${PWD}/./data/certbot/conf,destination=/etc/letsencrypt --mount type=bind,source=${PWD}/./data/certbot/www,destination=/var/www/certbot --mount type=bind,source=${PWD}/./data/etc/ssl/private,destination=/etc/ssl/private --mount type=bind,source=${PWD}/./data/srv/tftp,destination=/usr/share/nginx/html/tftp,bind-propagation=shared --mount type=bind,source=${PWD}/./data/usr/share/nginx/html,destination=/usr/share/nginx/html,bind-propagation=shared --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/web-cert,destination=/etc/ssl/cert --mount type=bind,source=${PWD}/./template/nginx,destination=/usr/share/nginx/template builder-web
+      podman run -d --privileged --name=${CURDIR}_web_1 --restart=always -p 80:80 -p 443:443 -e CN=edgebuilder.local -e O=edgebuilder -e OU=edgebuilder -e C=US -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} \
+      --mount type=bind,source=${PWD}/./data/certbot/conf,destination=/etc/letsencrypt \
+      --mount type=bind,source=${PWD}/./data/certbot/www,destination=/var/www/certbot \
+      --mount type=bind,source=${PWD}/./data/etc/ssl/private,destination=/etc/ssl/private \
+      --mount type=bind,source=${PWD}/./data/usr/share/nginx/html,destination=/usr/share/nginx/html,bind-propagation=shared \
+      --mount type=bind,source=${PWD}/./data/srv/tftp,destination=/usr/share/nginx/html/tftp,bind-propagation=shared \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/pxelinux.cfg/,destination=/usr/share/nginx/html/tftp/pxelinux.cfg/ \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/pxelinux.cfg_legacy/,destination=/usr/share/nginx/html/tftp/legacy/pxelinux.cfg/ \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/pxelinux.cfg/,destination=/usr/share/nginx/html/tftp/efi32/pxelinux.cfg/ \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/pxelinux.cfg/,destination=/usr/share/nginx/html/tftp/efi64/pxelinux.cfg/ \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/images/uos/,destination=/usr/share/nginx/html/tftp/legacy/images/uos/ \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/images/uos/,destination=/usr/share/nginx/html/tftp/efi32/images/uos/ \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/images/uos/,destination=/usr/share/nginx/html/tftp/efi64/images/uos/ \
+      --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/web-cert,destination=/etc/ssl/cert \
+      --mount type=bind,source=${PWD}/./template/nginx,destination=/usr/share/nginx/template builder-web
     fi
   fi
 
   if ! docker ps -a | grep ${CURDIR}_dnsmasq_1 > /dev/null; then
     if { [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "dnsmasq" ] ; } && [ "${NO_DNSMASQ}" = "false" ]; then
-      podman run -d --privileged --name=${CURDIR}_dnsmasq_1 --restart=always --network=host -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} --mount type=bind,source=${PWD}/./template/pxe_bg.png,destination=/srv/tftp/pxe_bg.png --mount type=bind,source=${PWD}/./template/pxe_bg.png,destination=/srv/tftp/legacy/pxe_bg.png --mount type=bind,source=${PWD}/./template/pxe_bg.png,destination=/srv/tftp/efi32/pxe_bg.png --mount type=bind,source=${PWD}/./template/pxe_bg.png,destination=/srv/tftp/efi64/pxe_bg.png --mount type=bind,source=${PWD}/./data/srv/tftp/images,destination=/srv/tftp/images --mount type=bind,source=${PWD}/./data/srv/tftp/images,destination=/srv/tftp/legacy/images --mount type=bind,source=${PWD}/./data/srv/tftp/images,destination=/srv/tftp/efi32/images --mount type=bind,source=${PWD}/./data/srv/tftp/images,destination=/srv/tftp/efi64/images --mount type=bind,source=${PWD}/./data/srv/tftp/pxelinux.cfg/,destination=/srv/tftp/pxelinux.cfg/ --mount type=bind,source=${PWD}/./data/srv/tftp/pxelinux.cfg_legacy/,destination=/srv/tftp/legacy/pxelinux.cfg/ --mount type=bind,source=${PWD}/./data/srv/tftp/pxelinux.cfg/,destination=/srv/tftp/efi32/pxelinux.cfg/ --mount type=bind,source=${PWD}/./data/srv/tftp/pxelinux.cfg/,destination=/srv/tftp/efi64/pxelinux.cfg/ --mount type=bind,source=${PWD}/./data/etc,destination=/etc/dnsmasq,bind-propagation=shared builder-dnsmasq
+      podman run -d --privileged --name=${CURDIR}_dnsmasq_1 --restart=always --network=host -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} \
+      --mount type=bind,source=${PWD}/./template/pxe_bg.png,destination=/srv/tftp/pxe_bg.png \
+      --mount type=bind,source=${PWD}/./template/pxe_bg.png,destination=/srv/tftp/legacy/pxe_bg.png \
+      --mount type=bind,source=${PWD}/./template/pxe_bg.png,destination=/srv/tftp/efi32/pxe_bg.png \
+      --mount type=bind,source=${PWD}/./template/pxe_bg.png,destination=/srv/tftp/efi64/pxe_bg.png \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/images,destination=/srv/tftp/images \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/images,destination=/srv/tftp/legacy/images \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/images,destination=/srv/tftp/efi32/images \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/images,destination=/srv/tftp/efi64/images \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/pxelinux.cfg/,destination=/srv/tftp/pxelinux.cfg/ \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/pxelinux.cfg_legacy/,destination=/srv/tftp/legacy/pxelinux.cfg/ \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/pxelinux.cfg/,destination=/srv/tftp/efi32/pxelinux.cfg/ \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/pxelinux.cfg/,destination=/srv/tftp/efi64/pxelinux.cfg/ \
+      --mount type=bind,source=${PWD}/./data/srv/tftp/,destination=/usr/share/nginx/html/tftp/,bind-propagation=shared \
+      --mount type=bind,source=${PWD}/./data/etc,destination=/etc/dnsmasq,bind-propagation=shared builder-dnsmasq
     fi
   fi
 
   if ! docker ps -a | grep ${CURDIR}_registry-mirror_1 > /dev/null; then
     if [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "registry-mirror" ]; then
-      podman run -d --privileged --name=${CURDIR}_registry-mirror_1 --restart=always -p 5557:5000 -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} --mount type=bind,source=${PWD}/./template/registry/,destination=/etc/docker/registry/,bind-propagation=shared --mount type=bind,source=${PWD}/./data/var/lib/registry,destination=/var/lib/registry registry:2 
+      podman run -d --privileged --name=${CURDIR}_registry-mirror_1 --restart=always -p 5557:5000 -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} \
+      --mount type=bind,source=${PWD}/./template/registry/,destination=/etc/docker/registry/,bind-propagation=shared \
+      --mount type=bind,source=${PWD}/./data/var/lib/registry,destination=/var/lib/registry registry:2 
     fi
   fi
 
   if ! docker ps -a | grep ${CURDIR}_squid_1 > /dev/null; then
     if [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "squid" ]; then
-      podman run -d --privileged --name=${CURDIR}_squid_1 --restart=always -p 3128:3128 -p 4128:4128 -e CN=squid.local -e O=squid -e OU=squid -e C=US -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} --mount type=bind,source=${PWD}/./template/squid,destination=/etc/squid/template --mount type=bind,source=${PWD}/./data/var/cache/squid,destination=/var/spool/squid --mount type=bind,source=${PWD}/./data/var/log/squid,destination=/var/log/squid --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/squid-cert,destination=/etc/squid-cert builder-squid
+      podman run -d --privileged --name=${CURDIR}_squid_1 --restart=always -p 3128:3128 -p 4128:4128 -e CN=squid.local -e O=squid -e OU=squid -e C=US -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} \
+      --mount type=bind,source=${PWD}/./template/squid,destination=/etc/squid/template \
+      --mount type=bind,source=${PWD}/./data/var/cache/squid,destination=/var/spool/squid \
+      --mount type=bind,source=${PWD}/./data/var/log/squid,destination=/var/log/squid \
+      --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/squid-cert,destination=/etc/squid-cert builder-squid
     fi
   fi
 
   if ! docker ps -a | grep ${CURDIR}_mirror_1 > /dev/null; then
     if [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "mirror" ]; then
-      podman run -d --privileged --name=${CURDIR}_mirror_1 --restart=always -p 3003:3000 -p 222:22 -e USER_UID=1000 -e USER_GID=1000 -e DISABLE_REGISTRATION=true -e DEFAULT_PRIVATE=public -e ENABLE_PUSH_CREATE_USER=true -e ENABLE_PUSH_CREATE_ORG=true -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} --mount type=bind,source=${PWD}/./data/gitea,destination=/data --mount type=bind,source=/etc/timezone,destination=/etc/timezone,ro --mount type=bind,source=/etc/localtime,destination=/etc/localtime,ro builder-gitea
+      podman run -d --privileged --name=${CURDIR}_mirror_1 --restart=always -p 3003:3000 -p 222:22 -e USER_UID=1000 -e USER_GID=1000 -e DISABLE_REGISTRATION=true -e DEFAULT_PRIVATE=public -e ENABLE_PUSH_CREATE_USER=true -e ENABLE_PUSH_CREATE_ORG=true -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} \
+      --mount type=bind,source=${PWD}/./data/gitea,destination=/data \
+      --mount type=bind,source=/etc/timezone,destination=/etc/timezone,ro \
+      --mount type=bind,source=/etc/localtime,destination=/etc/localtime,ro builder-gitea
     fi
   fi
 
   if ! docker ps -a | grep ${CURDIR}_smb_1 > /dev/null; then
     if [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "smb" ]; then
-      podman run -d --privileged --name=${CURDIR}_smb_1 --restart=always -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/smb,destination=/smbshare builder-smb 
+      podman run -d --privileged --name=${CURDIR}_smb_1 --restart=always -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} \
+      --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/smb,destination=/smbshare builder-smb 
     fi
   fi
 
   if ! docker ps -a | grep ${CURDIR}_certbot_1 > /dev/null; then
     if [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "certbot" ]; then
-      podman run -d --privileged --name=${CURDIR}_certbot_1 --restart=on-failure -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} --mount type=bind,source=${PWD}/./conf,destination=/opt/esp/conf --mount type=bind,source=${PWD}/./data/certbot/conf,destination=/etc/letsencrypt --mount type=bind,source=${PWD}/./data/certbot/www,destination=/var/www/certbot --mount type=bind,source=${PWD}/./data/certbot/lib,destination=/var/lib/letsencrypt --mount type=bind,source=${PWD}/./data/etc/ssl/private,destination=/etc/ssl/private --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/web-cert,destination=/etc/ssl/cert builder-certbot 
+      podman run -d --privileged --name=${CURDIR}_certbot_1 --restart=on-failure -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} \
+      --mount type=bind,source=${PWD}/./conf,destination=/opt/esp/conf \
+      --mount type=bind,source=${PWD}/./data/certbot/conf,destination=/etc/letsencrypt \
+      --mount type=bind,source=${PWD}/./data/certbot/www,destination=/var/www/certbot \
+      --mount type=bind,source=${PWD}/./data/certbot/lib,destination=/var/lib/letsencrypt \
+      --mount type=bind,source=${PWD}/./data/etc/ssl/private,destination=/etc/ssl/private \
+      --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/web-cert,destination=/etc/ssl/cert builder-certbot 
     fi
   fi
 
   if ! docker ps -a | grep ${CURDIR}_dyn-profile_1 > /dev/null; then
     if [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "dyn-profile" ]; then
-      podman run -d --privileged --name=${CURDIR}_dyn-profile_1 --restart=always -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} -e host_ip=${HOST_IP:-} -e dyn_url=${DYN_URL:-} -e dyn_url_user=${DYN_URL_USER:-} -e dyn_url_token=${DYN_URL_TOKEN:-} --mount type=bind,source=${PWD}/./conf,destination=${PWD}/conf,bind-propagation=shared --mount type=bind,source=${PWD}/./data/dyn-profile,destination=/data builder-dyn-profile 
+      podman run -d --privileged --name=${CURDIR}_dyn-profile_1 --restart=always -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} -e host_ip=${HOST_IP:-} -e dyn_url=${DYN_URL:-} -e dyn_url_user=${DYN_URL_USER:-} -e dyn_url_token=${DYN_URL_TOKEN:-} \
+      --mount type=bind,source=${PWD}/./conf,destination=${PWD}/conf,bind-propagation=shared \
+      --mount type=bind,source=${PWD}/./data/dyn-profile,destination=/data builder-dyn-profile 
     fi
   fi
 fi

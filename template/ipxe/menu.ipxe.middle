@@ -1,0 +1,89 @@
+item --gap --              
+item --gap --             --------------------------------------------------------------------------
+item --gap --             Advanced options
+item --gap --             --------------------------------------------------------------------------
+item --key s linuxmenu     Boot Legacy ESP Menu (SYSLINUX)
+item --key t tinycore      Boot TinyCore Linux
+item --key w winpe         Boot WinPE
+item --key l exit          Boot local hard drive
+item --gap --             
+item --key c config        Configure settings
+item shell                 Drop to iPXE shell         
+item reboot                Reboot computer            
+item --gap --             
+item --key x exit          Exit iPXE and continue BIOS boot
+item --gap --             --------------------------------------------------------------------------
+choose --timeout ${menu-timeout} --default ${menu-default} selected || goto cancel
+set menu-timeout 0
+goto ${selected}
+
+:linuxmenu
+iseq ${platform} efi && goto syslinux || goto pxelinux
+
+:pxelinux
+imgfree
+set 210:string http://@@HOST_IP@@/tftp/legacy/
+set filename ${210:string}pxelinux.0
+chain ${filename} ||
+echo PXELINUX Netboot failed
+shell
+
+:syslinux
+imgfree
+set 210:string http://@@HOST_IP@@/tftp/efi${efiarch}/
+set filename ${210:string}syslinux.efi
+chain ${filename} ||
+echo SYSLINUX Netboot failed
+shell
+
+:loadipxe
+set 210:string tftp://@@HOST_IP@@/ipxe/legacy/
+set filename ${210:string}undionly.kpxe
+chain ${filename} ||
+echo iPXE Netboot failed
+shell
+
+:tinycore
+set base http://tinycorelinux.net/13.x/x86/release/distribution_files
+
+cpuid --ext 29 && set arch 64 || set arch
+
+kernel ${base}/vmlinuz${arch} initrd=rootfs.gz initrd=modules${arch}.gz
+initrd ${base}/rootfs.gz
+initrd ${base}/modules${arch}.gz
+boot || goto menu
+
+:winpe
+cpuid --ext 29 && set arch amd64 || set arch x86
+
+kernel http://@@HOST_IP@@/tftp/images/ipxe/wimboot
+initrd http://@@HOST_IP@@/tftp/images/winpe/Boot/BCD         BCD
+initrd http://@@HOST_IP@@/tftp/images/winpe/Boot/boot.sdi    boot.sdi
+initrd http://@@HOST_IP@@/tftp/images/winpe/sources/boot.wim boot.wim
+boot || goto menu
+
+:cancel
+echo You cancelled the menu, dropping you to a shell
+
+:shell
+echo Type 'exit' to get the back to the menu
+shell
+set menu-timeout 0
+set submenu-timeout 0
+goto menu
+
+:failed
+echo Booting failed, dropping to shell
+goto shell
+
+:reboot
+reboot
+
+:exit
+sanboot --no-describe --drive 0x80
+exit
+
+:local
+sanboot --no-describe --drive 0x80
+exit
+
