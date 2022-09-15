@@ -13,14 +13,13 @@ RUN apk --no-cache add  \
       nmap-scripts \
       rsync \
       syslinux \
+      docker-compose \
       wget && \
     apk --no-cache -U upgrade && \
     update-ca-certificates
 
 RUN mkdir -p /opt/core/conf /opt/core/data/srv /opt/core/scripts /opt/core/dockerfiles && \
     mkdir -p /usr/local/bin && \
-    wget -O /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/v2.11.0/docker-compose-$(uname -s)-$(uname -m)" && \
-    chmod a+x /usr/local/bin/docker-compose && \
     mkdir -p /usr/share/ipxe && \
     wget -O /usr/share/ipxe/ipxe.lkrn https://boot.ipxe.org/ipxe.lkrn && \
     wget -O /usr/share/ipxe/wimboot https://github.com/ipxe/wimboot/releases/latest/download/wimboot
