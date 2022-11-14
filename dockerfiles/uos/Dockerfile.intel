@@ -38,8 +38,7 @@ RUN ar x linux-image-unsigned-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
         ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/ethernet/ \
         ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/gpu/ \
         ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/video/ \
-        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/phy/ \
-        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/wireless/ \
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/ \
         ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/misc/mei/ \
         ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/mmc/ \
         ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/media/mmc/ \
