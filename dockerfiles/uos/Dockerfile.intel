@@ -35,6 +35,7 @@ RUN ar x linux-image-unsigned-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
     tar -xf data.tar.xz && \
     ar x linux-modules-extra-${UBUNTU_RELEASE}_${KERNEL_VERSION}.deb && \
     tar -xf data.tar.xz \ 
+        ./lib/modules/${UBUNTU_RELEASE}/kernel/net/ \
         ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/net/ethernet/ \
         ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/gpu/ \
         ./lib/modules/${UBUNTU_RELEASE}/kernel/drivers/video/ \
