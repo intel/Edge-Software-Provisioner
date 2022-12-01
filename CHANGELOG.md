@@ -199,7 +199,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Known Problem
 - Missing instructions of how to build the boot.wim, boot.sdi and BCD from Microsoft ADK
 
+## [3.0.1] - 2022-11-30
+### Added
+- Added additional kernel modules to the ESP uOS
 
+### Changed
+- Fixed WEBROOT creation with Gitea is disabled
+- Fixed USB image size calculation
+- Fixed ESP build when dynamic profile is active 
+- Updated the version of docker-compose inside core container
+
+### Known Problem
+- Missing instructions of how to build the boot.wim, boot.sdi and BCD from Microsoft ADK
 
 
 [1.5.1]: https://github.com/intel/Edge-Software-Provisioner/compare/v1.5...v1.5.1
@@ -217,3 +228,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [2.5.3]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5.2...v2.5.3
 [2.5.4]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5.3...v2.5.4
 [3.0.0]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5.4...v3.0
+[3.0.1]: https://github.com/intel/Edge-Software-Provisioner/compare/v3.0...v3.0.1

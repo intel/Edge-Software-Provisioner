@@ -7,13 +7,13 @@ LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 RUN apk --no-cache add  \
       bash \
       dumb-init \
+      docker-compose \
       inotify-tools \
       git \
       nmap \
       nmap-scripts \
       rsync \
       syslinux \
-      docker-compose \
       wget && \
     apk --no-cache -U upgrade && \
     update-ca-certificates

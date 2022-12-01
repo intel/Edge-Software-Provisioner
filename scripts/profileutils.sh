@@ -1396,7 +1396,7 @@ genProfileUsbBoot() {
         export CALC_IMG_SIZE=$(( ((${KERNEL_SIZE} + ${INITRD_SiZE} + 52428800)/4096) + ( (${KERNEL_SIZE} + ${INITRD_SiZE} + 52428800) % 4096 > 0 ) ))
 
         if [ "${USB_BIOS}" == "efi" ]; then
-            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb ${UOS_BUILDER} -c "IMG_SIZE=\${CALC_IMG_SIZE} && \
+            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb ${UOS_BUILDER} -c "IMG_SIZE=${CALC_IMG_SIZE} && \
                 truncate --io-blocks --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
                 dd bs=440 count=1 conv=notrunc if=/usr/share/syslinux/gptmbr.bin of=\${TEMP_IMG_DEV} > /dev/null 2>&1 && \
@@ -1417,7 +1417,7 @@ genProfileUsbBoot() {
                 mv /usb/temp.img /usb/${IMG_NAME}.img"
             umount /dev/console
         else
-            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb ${UOS_BUILDER} -c "IMG_SIZE=\${CALC_IMG_SIZE} && \
+            docker run -it --rm --privileged ${DOCKER_RUN_ARGS} -v /dev:/dev:shared -v $(pwd)/data:/data -v $(pwd)/${usb_path}/${name}:/usb ${UOS_BUILDER} -c "IMG_SIZE=${CALC_IMG_SIZE} && \
                 truncate --io-blocks --size \${IMG_SIZE} /usb/temp.img && \
                 TEMP_IMG_DEV=\$(losetup --find --show /usb/temp.img) && \
                 parted --script \${TEMP_IMG_DEV} mklabel msdos mkpart primary fat32 1MiB 100% set 1 boot on && \

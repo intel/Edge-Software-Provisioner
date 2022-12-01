@@ -210,13 +210,16 @@ renderSystemNetworkTemplates() {
     local tmpDnsMasqConf="template/dnsmasq/dnsmasq.conf"
     if [[ ${DYNAMIC_PROFILE} == "false" ]];then
         local tmpPxeMenuFile=$(getTmpPxeMenuLocation)
+        local tmpIpxeMenuFile=$(getTmpIpxeMenuLocation)
     else
         local tmpPxeMenuFile="template/pxelinux.cfg/default.dynamic"
+        local tmpIpxeMenuFile="template/ipxe/menu.ipxe.head"
     fi
 
     # Copy template files
     copySampleFile ${tmpDnsMasqConf} ${tmpDnsMasqConf}.modified
     copySampleFile ${tmpPxeMenuFile} ${tmpPxeMenuFile}.modified
+    copySampleFile ${tmpIpxeMenuFile} ${tmpIpxeMenuFile}.modified
 
     # Replace the template variables with their appropriate values
     local dhcpRangeMinimumPlaceholder=("@@DHCP_MIN@@" "@@ESP_DHCP_MIN@@" "@@RNI_DHCP_MIN@@" "@@EDGEBUILDER_DHCP_MIN@@")
@@ -235,7 +238,7 @@ renderSystemNetworkTemplates() {
     # Note that profile-scoped variables are not accessible here.
     # In order to gain access to that scope use the renderTemplate
     # functionality
-    local stgFiles=("${tmpDnsMasqConf}.modified" "${tmpPxeMenuFile}.modified" "${WEB_ROOT}/tmp_menu.ipxe")
+    local stgFiles=("${tmpDnsMasqConf}.modified" "${tmpPxeMenuFile}.modified" "${tmpIpxeMenuFile}.modified")
     for stgFile in ${stgFiles[@]}; do
         for i in {0..2}
         do

@@ -16,6 +16,7 @@ genPxeMenuHead() {
 }
 
 genIpxeMenuHead() {
+    makeDirectory "${WEB_ROOT}"
     cp "./template/ipxe/menu.ipxe.head" "${WEB_ROOT}/tmp_menu.ipxe"
 }
 

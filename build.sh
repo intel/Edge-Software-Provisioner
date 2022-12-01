@@ -497,6 +497,7 @@ if [[ "${DYNAMIC_PROFILE}" == "false" ]]; then
     profilesActions genProfilePxeMenu
     genPxeMenuTail
 
+    printBanner "Generating ${C_GREEN}IPXE Menu..."
     logMsg "Generating IPXE Menu..."
     genIpxeMenuHead
     profilesActions genProfileIpxeMenu
