@@ -60,6 +60,9 @@ updateIpxeMenu() {
     if [ -f "${WEB_ROOT}/tmp_menu.ipxe" ]; then
         mv "${WEB_ROOT}/tmp_menu.ipxe" "${WEB_ROOT}/menu.ipxe"
     fi
+    if [ -f "${WEB_ROOT}/tmp_menu.ipxe.modified" ]; then
+        mv "${WEB_ROOT}/tmp_menu.ipxe.modified" "${WEB_ROOT}/menu.ipxe"
+    fi
 }
 
 # The usage for this is a little strange.

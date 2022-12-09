@@ -441,7 +441,14 @@ processBuild() {
 
     local message="  Running Build process, this could take a very long time.  In another terminal run 'docker logs ${container_name} -f' to watch progress."
     run "${message}" \
-        "docker run -d --rm --privileged --name build-docker ${DOCKER_RUN_ARGS} -v $(pwd)/data/tmp/build:/var/run -v $(pwd)/data/lib/docker:/var/lib/docker docker:20.10.17-dind && \
+        "docker run -d --rm --privileged --name build-docker ${DOCKER_RUN_ARGS} \
+            -v $(pwd)/data/tmp/build:/var/run \
+            -v $(pwd)/data/lib/docker:/var/lib/docker \
+            ${BASE_BIND} \
+            -v ${WEB_PROFILE}/${profile_name}/build:/opt/build \
+            -v ${WEB_FILES}/${profile_name}/build:/opt/output:shared \
+            -v ${EMBEDDED_FILES}/${profile_name}:/opt/embedded \
+            docker:20.10.17-dind && \
         sleep 7 && \
         echo 'Waiting for Docker'; \
         if ! docker -H unix:///$(pwd)/data/tmp/build/docker.sock ps > /dev/null ; then
