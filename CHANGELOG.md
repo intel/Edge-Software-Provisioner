@@ -220,6 +220,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Known Problem
 - Missing instructions of how to build the boot.wim, boot.sdi and BCD from Microsoft ADK
 
+## [3.0.5] - 2023-03-14
+### Added
+- Added support for UEFI HTTP Boot (HTTPClient)
+
+### Changed
+- Fixed anticipate DHCP delays in the network with iPXE
+- Fixed samba config path
+- Fixed detecting if there is more than one dhcp server on the network
+- Switched Docker Daemon to vfs because aufs bug on ESP uOS
+
+### Known Problem
+- Missing instructions of how to build the boot.wim, boot.sdi and BCD from Microsoft ADK
+
 
 [1.5.1]: https://github.com/intel/Edge-Software-Provisioner/compare/v1.5...v1.5.1
 [1.6.0]: https://github.com/intel/Edge-Software-Provisioner/compare/v1.5.1...v1.6
@@ -238,3 +251,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [3.0.0]: https://github.com/intel/Edge-Software-Provisioner/compare/v2.5.4...v3.0
 [3.0.1]: https://github.com/intel/Edge-Software-Provisioner/compare/v3.0...v3.0.1
 [3.0.2]: https://github.com/intel/Edge-Software-Provisioner/compare/v3.0.1...v3.0.2
+[3.0.3]: https://github.com/intel/Edge-Software-Provisioner/compare/v3.0.2...v3.0.3

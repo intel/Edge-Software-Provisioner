@@ -49,10 +49,10 @@ getMySubnet() {
 
 detectDHCP() {
     if [[ -z "${builder_config_interface+x}" ]]; then
-        local ip=$(docker run -it --rm --net=host --entrypoint="" builder-dnsmasq sh -c 'nmap --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}"' )
+        local ip=$(docker run -it --rm --net=host --entrypoint="" builder-dnsmasq sh -c 'nmap --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}" | head -n 1' )
         echo ${ip} | tr -d '\r' 2> /dev/null
     else
-        local ip=$(docker run -it --rm --net=host -e INTERFACE=${builder_config_interface} --entrypoint="" builder-dnsmasq sh -c 'nmap -e ${INTERFACE} --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}"' )
+        local ip=$(docker run -it --rm --net=host -e INTERFACE=${builder_config_interface} --entrypoint="" builder-dnsmasq sh -c 'nmap -e ${INTERFACE} --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}" | head -n 1' )
         echo ${ip} | tr -d '\r' 2> /dev/null
     fi
 }
