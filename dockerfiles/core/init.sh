@@ -96,7 +96,7 @@ if [ ! -d ${BUILDER_PATH}/root/.git ]; then
       # Sleeping for user to run build manually
       sleep 15
       ./build.sh -C -S && \
-      docker restart $(docker ps | grep _dnsmasq_1 | awk '{print $1}')
+      docker restart $(docker ps | grep -e "[_-]dnsmasq[_-]1" | awk '{print $1}')
     fi
   done
 else
