@@ -65,12 +65,12 @@ if [ ! -d ${BUILDER_PATH}/root/.git ]; then
   fi
   
   # Wait for dnsmasq service to start
-  while (! docker ps | grep _dnsmasq_1 > /dev/null 2>&1 ); do 
+  while (! docker ps | grep -e "[_-]dnsmasq[_-]1" > /dev/null 2>&1 ); do 
     echo "Waiting for dnsmasq to start"; 
     sleep 1; 
   done
 
-  TAG_PREFIX_TMP=$(docker ps | grep _dnsmasq_1 | awk '{print $2}' | head -n 1)
+  TAG_PREFIX_TMP=$(docker ps | grep -e "[_-]dnsmasq[_-]1" | awk '{print $2}' | head -n 1)
   TAG_PREFIX=${TAG_PREFIX_TMP%%/builder-dnsmasq}
 
   IMAGES="builder-core builder-gitea builder-dnsmasq builder-squid builder-web builder-git builder-aws-cli builder-uos builder-qemu builder-certbot builder-smb builder-dyn-profile uos-kernel uos-wlan:v1.0 uos-firmware-wifi:v1.0 uos-dyninit:v1.0"
