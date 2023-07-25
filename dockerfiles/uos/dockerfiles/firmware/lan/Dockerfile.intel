@@ -1,0 +1,43 @@
+# Copyright (C) 2022 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM alpine:3.14 as kernel-builder
+LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
+
+# Leave out 3rd version number.  For example at the time of this file we are downloading version 1.187.33.  
+ARG FIRMWARE=1.187
+
+RUN apk update && apk add --no-cache \
+    bash \
+    curl \
+    wget \
+    tar \
+    rpm \
+    cpio \
+    binutils \
+    xz
+
+WORKDIR /build
+RUN mkdir /out
+
+# List of kernels
+#  wget -qO - https://mirrors.kernel.org/ubuntu/pool/main/l/linux/ | sed -n 's/.*href="\([^"]*\).*/\1/p' | grep -o "linux-image-unsigned-[0-9]\.[0-9]\+\.[0-9]\+-[0-9]\+-generic_[^ ]\+amd64\.deb"
+# https://mirrors.edge.kernel.org/ubuntu/pool/main/l/linux-firmware/linux-firmware_1.197_all.deb
+
+RUN FIRMWARE_FILE=$(curl -s https://mirrors.edge.kernel.org/ubuntu/pool/main/l/linux-firmware/ | grep -Eo linux-firmware_${FIRMWARE}.\[0-9\]\[\-\_\.0-9a-zA-Z\]+_all.deb | head -n1) && \
+    wget https://mirrors.edge.kernel.org/ubuntu/pool/main/l/linux-firmware/${FIRMWARE_FILE} && \
+    ar x ${FIRMWARE_FILE} && \
+    tar --wildcards -xf data.tar.xz \
+        ./lib/firmware/intel \
+        ./lib/firmware/brcm \
+        ./lib/firmware/mrvl \
+        ./lib/firmware/e100 \
+        ./lib/firmware/ath* \
+        ./lib/firmware/rt* && \
+    mv ./lib /out/
+
+FROM scratch
+ENTRYPOINT []
+CMD []
+WORKDIR /
+COPY --from=kernel-builder /out/* /lib/

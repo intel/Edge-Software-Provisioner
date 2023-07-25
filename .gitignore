@@ -34,6 +34,7 @@ data/usr/share/nginx/html/kickstart/default/dyn-ks.yml_*
 
 # Template staging files
 template/dnsmasq/dnsmasq.conf.modified*
+template/logging-server/fluent-bit.conf.modified*
 
 # Auto-generated UOS files & directories
 dockerfiles/uos/prep/

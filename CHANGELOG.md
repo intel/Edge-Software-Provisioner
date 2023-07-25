@@ -233,6 +233,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Known Problem
 - Missing instructions of how to build the boot.wim, boot.sdi and BCD from Microsoft ADK
 
+## [3.1.2] - 2023-07-24
+### Added
+- Added progress logging from ESP uOS to ESP Services
+- Added support for airgapped environments
+- Published containers to Docker Hub and now support single step quick deployment method
+
+### Changed
+- Fixed Miscellaneous bugs
+
+### Known Problem
+- Missing instructions of how to build the boot.wim, boot.sdi and BCD from Microsoft ADK
+
 
 [1.5.1]: https://github.com/intel/Edge-Software-Provisioner/compare/v1.5...v1.5.1
 [1.6.0]: https://github.com/intel/Edge-Software-Provisioner/compare/v1.5.1...v1.6
@@ -252,3 +264,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [3.0.1]: https://github.com/intel/Edge-Software-Provisioner/compare/v3.0...v3.0.1
 [3.0.2]: https://github.com/intel/Edge-Software-Provisioner/compare/v3.0.1...v3.0.2
 [3.0.5]: https://github.com/intel/Edge-Software-Provisioner/compare/v3.0.2...v3.0.5
+[3.1.2]: https://github.com/intel/Edge-Software-Provisioner/compare/v3.0.5...v3.1.2

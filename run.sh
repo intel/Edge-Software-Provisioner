@@ -39,6 +39,10 @@ FORCE_RECREATE="false"
 FORCE_RESTART="false"
 DOWN="false"
 NO_TAIL_LOGS="false"
+
+# export HOSTNAME to make docker-compose can read it
+export HOSTNAME="$(hostname)"
+
 for var in "$@"; do
     case "${var}" in
         "-m" | "--no-dnsmasq"   ) NO_DNSMASQ="true";;
@@ -121,7 +125,7 @@ else
         scripts/espctl.sh up --no-dnsmasq
     else
         DOCKER_COMPOSE_SERVICES="core web registry-mirror squid"
-        if [[ "${builder_config_disable_certbot-false}" == "false" ]]; then
+        if [[ "${builder_config_letsencrypt_enabled-false}" == "true" ]]; then
             DOCKER_COMPOSE_SERVICES="${DOCKER_COMPOSE_SERVICES} certbot"
         fi
         if [[ "${builder_config_disable_gitea-false}" == "false" ]]; then
@@ -132,6 +136,9 @@ else
         fi
         if [[ "${builder_config_dynamic_profile__enabled-x}" == "true" ]]; then
             DOCKER_COMPOSE_SERVICES="${DOCKER_COMPOSE_SERVICES} dyn-profile"
+        fi
+        if [[ "${builder_config_disable_fluent_logging-false}" == "false" ]]; then
+            DOCKER_COMPOSE_SERVICES="${DOCKER_COMPOSE_SERVICES} logging-server"
         fi
         docker-compose up -d ${DOCKER_COMPOSE_SERVICES}
     fi

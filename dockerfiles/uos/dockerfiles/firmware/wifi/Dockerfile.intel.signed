@@ -8,13 +8,13 @@ LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 ARG FIRMWARE=1.187
 
 RUN apk update && apk add --no-cache \
-    bash \
-    curl \
-    wget \
-    tar \
-    rpm \
-    cpio \
-    binutils \
+		bash \
+		curl \
+		wget \
+		tar \
+		rpm \
+		cpio \
+		binutils \
     xz
 
 WORKDIR /build

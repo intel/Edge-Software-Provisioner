@@ -8,13 +8,13 @@
 # This default behavior may not work if your network
 # is not a /24, so make sure to specify here if needed.
 
+# The following are optional and automatically discovered
 # dhcp_range_minimum: 192.168.1.100
 # dhcp_range_maximum: 192.168.1.250
 # network_broadcast_ip: 192.168.1.255
 # network_gateway_ip: 192.168.1.1
 
 # If omitted, host_ip is automatically determined
-
 # host_ip: 192.168.1.11
 
 # If omitted, defaults to 8.8.8.8
@@ -42,11 +42,18 @@
 
 # interface: enp2s0
 
+# remote_logging_server is the remote Fluent-Bit instance which collects logs of provisioning process. Must be an FQDN or IP Address.
+# remote_logging_service_uri is the remote Fluent-Bit instance URI path for collection.  Defaults to "edgenode_provisioning"
+# To disable fluent logging service in ESP, set "disable_fluent_logging: true" in the below section.
+
+# remote_logging_server: (must be an FQDN or IP Address)
+# remote_logging_service_uri: (path to receiving service)
+
 # This section is used to enable dynamic profile association. Please read the instructions on
 # how to use here: https://github.com/intel/Edge-Software-Provisioner#dynamic-profile
 # You can modify the file conf/dynamic_profiles.json or place this on github location.  After 
 # pxe boot, the ESP uOS will get the desired parameters from the hardware, send it back to the 
-# builder-dyn-profile service, which will then provide the desired profile location
+# intel/esp-dyn-profile service, which will then provide the desired profile location
 
 # dynamic_profile:
 #   enabled: true
@@ -70,15 +77,18 @@
 # disable_aws_cli: false
 # disable_qemu: false
 # disable_smb: false
-# disable_certbot: false
 # disable_dnsmasq: false
 # disable_dyn_profile: false
+disable_fluent_logging: true
+
+# This is for airgap condition,profiles in local
+# airgapped_mode: true
 
 # Please make sure to define ALL of the variables below, even if they
 # are empty. Otherwise, this application will not be configured properly.
 profiles:
 
-  - git_remote_url: https://github.com/intel/rni-profile-base-clearlinux.git
+  - git_remote_url: https://github.com/intel/esp-profile-clearlinux.git
     profile_branch: slim
     profile_base_branch: master
     git_username: ""
@@ -87,7 +97,7 @@ profiles:
     name: Clear_Linux
     custom_git_arguments: --depth=1
 
-  - git_remote_url: https://github.com/intel/rni-profile-base-clearlinux.git
+  - git_remote_url: https://github.com/intel/esp-profile-clearlinux.git
     profile_branch: desktop
     profile_base_branch: master
     git_username: ""
@@ -96,7 +106,7 @@ profiles:
     name: Clear_Linux_Desktop
     custom_git_arguments: --depth=1
 
-  - git_remote_url: https://github.com/intel/rni-profile-base-ubuntu.git
+  - git_remote_url: https://github.com/intel/esp-profile-ubuntu.git
     profile_branch: slim
     profile_base_branch: master
     git_username: ""
@@ -105,7 +115,7 @@ profiles:
     name: Ubuntu_20.04
     custom_git_arguments: --depth=1
 
-  - git_remote_url: https://github.com/intel/rni-profile-base-ubuntu.git
+  - git_remote_url: https://github.com/intel/esp-profile-ubuntu.git
     profile_branch: desktop
     profile_base_branch: master
     git_username: ""

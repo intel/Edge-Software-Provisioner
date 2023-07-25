@@ -20,7 +20,7 @@ docker run -d \
     -e NETWORK_DEVICE=e1000 \
     -e VNC=tcp \
     -p 5900:5900
-    builder-qemu
+    esp-qemu
 ```
 
 
@@ -41,7 +41,7 @@ docker run \
     -p 2222:22 \
     -p 8080:80 \
     -p 5900:5900 \
-    builder-qemu
+    esp-qemu
 ```
 
 
@@ -60,7 +60,7 @@ docker run \
     -p 2222:22 \
     -p 8080:80 \
     -p 5900:5900 \
-    builder-qemu
+    esp-qemu
 ```
 
 
@@ -79,7 +79,7 @@ docker run \
     -p 2222:22 \
     -p 8080:80 \
     -p 5900:5900 \
-    builder-qemu
+    esp-qemu
 ```
 
 

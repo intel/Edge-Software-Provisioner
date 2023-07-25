@@ -30,8 +30,8 @@ else
 	# reboot
 fi
 
-if [[ $kernel_params = *"proxy="* ]]; then
-  tmp="${kernel_params##*proxy=}"
+if [[ $kernel_params = *" proxy="* ]]; then
+  tmp="${kernel_params##* proxy=}"
   param_proxy="${tmp%% *}"
 
   export http_proxy=${param_proxy}
@@ -42,9 +42,21 @@ if [[ $kernel_params = *"proxy="* ]]; then
   export NO_PROXY="localhost,127.0.0.1,${param_httpserver}"
 fi
 
+if [[ $kernel_params == *" noproxy="* ]]; then
+	tmp="${kernel_params##* noproxy=}"
+	export param_noproxy="${tmp%% *}"
+	export no_proxy="${param_noproxy},${param_httpserver}"
+	export NO_PROXY="${param_noproxy},${param_httpserver}"
+fi
+
 if [[ $kernel_params = *"token="* ]]; then
 	tmp="${kernel_params##*token=}"
 	param_token="${tmp%% *}"
+fi
+
+if [[ $kernel_params = *" logserver="* ]]; then
+	tmp="${kernel_params##*logserver=}"
+	param_logserver="${tmp%% *}"
 fi
 
 if [ $( nc -vz ${param_httpserver} 80; echo $?; ) -ne 0 ] && [ $( nc -vz ${param_httpserver} 443; echo $?; ) -ne 0 ]; then
@@ -65,6 +77,43 @@ if [ $( nc -vz ${param_httpserver} 80; echo $?; ) -ne 0 ] && [ $( nc -vz ${param
 	fi
 fi
 touch /opt/bootstrap/init.done
+
+if [ ! -z ${param_logserver+x} ]; then
+  
+	if ( ! docker pull intel/esp-logging-agent > /dev/null 2>&1 ); then
+		if (wget --no-check-certificate --method=HEAD https://${param_httpserver}/containers/intel_esp-logging-agent.tar.gz 2>&1 | grep "200 OK"); then
+			wget --no-check-certificate -O- https://${param_httpserver}/containers/intel_esp-logging-agent.tar.gz | docker load
+		fi
+	fi
+
+	if docker images | grep intel/esp-logging-agent; then
+		if [ ! -z ${param_proxy+x} ]; then
+			docker run -d \
+				-v /dev:/dev \
+				-v /tmp:/tmp \
+				-e http_proxy=${http_proxy} \
+				-e https_proxy=${https_proxy} \
+				-e no_proxy=${no_proxy} \
+				-e HTTP_PROXY=${HTTP_PROXY} \
+				-e HTTPS_PROXY=${HTTPS_PROXY} \
+				-e NO_PROXY=${NO_PROXY} \
+				-e LOGGING_SERVER=${param_logserver} \
+				--privileged \
+				--restart=always \
+				--name provisioning_logging_agent \
+				intel/esp-logging-agent
+		else
+			docker run -d \
+				-v /dev:/dev \
+				-v /tmp:/tmp \
+				-e LOGGING_SERVER=${param_logserver} \
+				--privileged \
+				--restart=always \
+				--name provisioning_logging_agent \
+				intel/esp-logging-agent
+		fi
+	fi
+fi
 
 if [ $( nc -vz ${param_httpserver} 80; echo $?; ) -ne 0 ] && [ $( nc -vz ${param_httpserver} 443; echo $?; ) -ne 0 ]; then
 	echo "Unable to connect to ${param_httpserver} and the network is up.  Verify the service is up and running." 2>&1 | tee -a ${CONSOLE_OUTPUT}
