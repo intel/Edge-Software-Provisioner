@@ -1,6 +1,6 @@
 # Edge Software Provisioner (ESP)
 
-## Quick Deployment Guide
+## Quick Start Guide
 
 To quickly get started follow the [Quick Deployment Guide](#quick-deployment-guide)
 
