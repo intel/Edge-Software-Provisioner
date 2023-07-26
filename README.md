@@ -2,7 +2,7 @@
 
 ## Quick Start Guide
 
-To quickly get started follow the [Quick Installation Guide](#quick-installation-guide)
+To quickly get started follow the [Quick Deployment Guide](#quick-deployment-guide)
 
 ## Table of Contents
 
