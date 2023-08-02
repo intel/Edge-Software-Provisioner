@@ -21,7 +21,7 @@ fi
 
 mkdir -p /opt/esp && \
 cd /opt/esp && \
-wget --no-check-certificate -O /opt/esp/docker-compose.yml https://raw.githubusercontent.com/intel/Edge-Software-Provisioner/v3.1.2/compose/docker-compose.yml && \
+wget --no-check-certificate -O /opt/esp/docker-compose.yml https://raw.githubusercontent.com/iroxintel/Edge-Software-Provisioner/v3.1.2/compose/docker-compose.yml && \
 docker-compose up -d core mirror && \
 while (! ls /opt/esp/run.sh > /dev/null 2>&1 ); do \
 	echo "Waiting for run.sh file to be created"; \
