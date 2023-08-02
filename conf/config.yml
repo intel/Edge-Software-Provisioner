@@ -88,38 +88,13 @@ disable_fluent_logging: true
 # are empty. Otherwise, this application will not be configured properly.
 profiles:
 
-  - git_remote_url: https://github.com/intel/esp-profile-clearlinux.git
-    profile_branch: slim
+  - git_remote_url: https://github.com/iroxintel/ubuntu-base.git
+    profile_branch: ubuntu-added-packages
     profile_base_branch: master
     git_username: ""
     git_token: ""
     # This is the name that will be shown on the PXE menu (NOTE: No Spaces)
-    name: Clear_Linux
+    name: Ubuntu22
     custom_git_arguments: --depth=1
 
-  - git_remote_url: https://github.com/intel/esp-profile-clearlinux.git
-    profile_branch: desktop
-    profile_base_branch: master
-    git_username: ""
-    git_token: ""
-    # This is the name that will be shown on the PXE menu (NOTE: No Spaces)
-    name: Clear_Linux_Desktop
-    custom_git_arguments: --depth=1
 
-  - git_remote_url: https://github.com/intel/esp-profile-ubuntu.git
-    profile_branch: slim
-    profile_base_branch: master
-    git_username: ""
-    git_token: ""
-    # This is the name that will be shown on the PXE menu (NOTE: No Spaces)
-    name: Ubuntu_20.04
-    custom_git_arguments: --depth=1
-
-  - git_remote_url: https://github.com/intel/esp-profile-ubuntu.git
-    profile_branch: desktop
-    profile_base_branch: master
-    git_username: ""
-    git_token: ""
-    # This is the name that will be shown on the PXE menu (NOTE: No Spaces)
-    name: Ubuntu_20.04_Desktop
-    custom_git_arguments: --depth=1
