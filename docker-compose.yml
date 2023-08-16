@@ -13,7 +13,7 @@ services:
   core:
     image:  intel/esp-core
     environment:
-      - CONTAINER_IMAGES="intel/esp-core intel/esp-gitea intel/esp-dnsmasq intel/esp-squid intel/esp-web intel/esp-git intel/esp-aws-cli intel/esp-uos-builder intel/esp-qemu intel/esp-certbot intel/esp-smb intel/esp-dyn-profile intel/esp-logging-agent intel/esp-uos-kernel intel/esp-uos-wifi intel/esp-uos-firmware-wifi intel/esp-uos-firmware-lan intel/esp-uos-dyninit"
+      - CONTAINER_IMAGES=intel/esp-core intel/esp-gitea intel/esp-dnsmasq intel/esp-squid intel/esp-web intel/esp-git intel/esp-aws-cli intel/esp-uos-builder intel/esp-qemu intel/esp-certbot intel/esp-smb intel/esp-dyn-profile intel/esp-logging-agent intel/esp-uos-kernel intel/esp-uos-wifi intel/esp-uos-firmware-wifi intel/esp-uos-firmware-lan intel/esp-uos-dyninit
       - BUILDER_PATH=${PWD}
       - PATH=${PWD}:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin
       - http_proxy=${http_proxy:-}

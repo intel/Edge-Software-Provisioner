@@ -22,7 +22,7 @@ To quickly get started follow the [Quick Deployment Guide](#quick-deployment-gui
 
 1. [Quick Installation Guide](#quick-installation-guide)
 
-1. [Installing the Edge Software Provisioner (ESP)](#installing-esp)
+1. [Configuring the Edge Software Provisioner (ESP)](#installing-esp)
 
 1. [Upgrading the Edge Software Provisioner (ESP)](#upgrading-esp)
 
@@ -178,7 +178,7 @@ Target Devices will be connected on the same LAN as the Edge Software Provisione
 
   **See [Adding and Removing Profiles](#adding-removing-profiles) to update the profile list**
 
-## Installing ESP
+## Configuring ESP
 
 Once the prerequisites and network setup have been taken care of, the steps to deployment are as follows.
 

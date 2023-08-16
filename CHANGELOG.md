@@ -237,9 +237,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Added progress logging from ESP uOS to ESP Services
 - Added support for airgapped environments
+- Updated Ubuntu Profiles to 22.04
 - Published containers to Docker Hub and now support single step quick deployment method
 
 ### Changed
+- Fixed ESP uOS Wifi detectability
 - Fixed Miscellaneous bugs
 
 ### Known Problem

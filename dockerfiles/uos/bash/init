@@ -64,7 +64,7 @@ if [ $( nc -vz ${param_httpserver} 80; echo $?; ) -ne 0 ] && [ $( nc -vz ${param
 	echo "No routable network interface found." 2>&1 | tee -a ${CONSOLE_OUTPUT}
 	echo -e "Routes:\n$(ip route show)\n\nLANs:\n$(ip -o -4 addr list)\n" 2>&1 | tee -a ${CONSOLE_OUTPUT}
 
-	if [ -d "/sys/class/ieee80211" ]; then
+	if [ -d "/sys/class/ieee80211" ] && [ "$(ls -A /sys/class/ieee80211 2>/dev/null )" ]; then
 		if [ -f /opt/bootstrap/init.done ]; then
 			rm /opt/bootstrap/init.done
 		fi

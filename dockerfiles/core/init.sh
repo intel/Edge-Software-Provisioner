@@ -84,6 +84,8 @@ if [ ! -d ${BUILDER_PATH}/root/.git ] && [ ! -f ${BUILDER_PATH}/root/.git ]; the
     done
   fi
 
+  #  Added sleep because there is a race condition that has not been discovered.  when dnsmasq is coming up cannot discover existing DHCP on the network
+  sleep 10
   cd ${BUILDER_PATH} && \
   ./build.sh -C -S -P -g
 

@@ -31,7 +31,7 @@ cp ${configfileTemplate} ${configfile}
 
 sed -i -e "s/@@COUNTRY@@/${COUNTRY}/g" ${configfile}
 
-if [ -d "/sys/class/ieee80211" ]; then
+if [ -d "/sys/class/ieee80211" ] && [ "$(ls -A /sys/class/ieee80211 2>/dev/null )" ]; then
   # Note: Can't use wpa_supplicant without WPA; have to disable it then e.g.,
   # iwconfig wlan0 essid "ietf-hotel"
 
@@ -61,7 +61,7 @@ fi
 
 while inotifywait -e modify ${configfile}; do 
   echo "${configfile} has changed. Restarting services"
-  if [ -d "/sys/class/ieee80211" ]; then
+  if [ -d "/sys/class/ieee80211" ] && [ "$(ls -A /sys/class/ieee80211 2>/dev/null )" ]; then
     # Note: Can't use wpa_supplicant without WPA; have to disable it then e.g.,
     # iwconfig wlan0 essid "ietf-hotel"
 

@@ -112,7 +112,7 @@ profiles:
     git_username: ""
     git_token: ""
     # This is the name that will be shown on the PXE menu (NOTE: No Spaces)
-    name: Ubuntu_20.04
+    name: Ubuntu_22.04
     custom_git_arguments: --depth=1
 
   - git_remote_url: https://github.com/intel/esp-profile-ubuntu.git
@@ -121,5 +121,5 @@ profiles:
     git_username: ""
     git_token: ""
     # This is the name that will be shown on the PXE menu (NOTE: No Spaces)
-    name: Ubuntu_20.04_Desktop
+    name: Ubuntu_22.04_Desktop
     custom_git_arguments: --depth=1

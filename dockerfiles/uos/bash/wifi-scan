@@ -14,7 +14,7 @@ if [ -f /opt/bootstrap/init.done ]; then
 	exit
 fi
 
-if [ -d "/sys/class/ieee80211" ]; then
+if [ -d "/sys/class/ieee80211" ] && [ "$(ls -A /sys/class/ieee80211 2>/dev/null )" ]; then
   echo ""
   echo ""
   echo "WiFi card found..."
