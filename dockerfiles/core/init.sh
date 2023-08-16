@@ -53,8 +53,8 @@ if [ ! -d ${BUILDER_PATH}/root/.git ] && [ ! -f ${BUILDER_PATH}/root/.git ]; the
     cp -a /opt/core/conf/* ${BUILDER_PATH}/conf/
   fi
 
-  rsync -rtc /opt/core/*.sh ${BUILDER_PATH}/
-  rsync -rtc /opt/core/*.sh ${BUILDER_PATH}/root/
+  rsync -rtc /opt/core/build.sh ${BUILDER_PATH}/
+  rsync -rtc /opt/core/build.sh ${BUILDER_PATH}/root/
   rsync -rtc /opt/core/scripts ${BUILDER_PATH}/
   rsync -rtc /opt/core/scripts ${BUILDER_PATH}/root/
   rsync -rtc /opt/core/dockerfiles ${BUILDER_PATH}/
@@ -84,10 +84,9 @@ if [ ! -d ${BUILDER_PATH}/root/.git ] && [ ! -f ${BUILDER_PATH}/root/.git ]; the
     done
   fi
 
-  #  Added sleep because there is a race condition that has not been discovered.  when dnsmasq is coming up cannot discover existing DHCP on the network
-  sleep 10
-  cd ${BUILDER_PATH} && \
-  ./build.sh -C -S -P -g
+  cd ${BUILDER_PATH} && ./build.sh -C -S -P -g
+  rsync -rtc /opt/core/*.sh ${BUILDER_PATH}/
+  rsync -rtc /opt/core/*.sh ${BUILDER_PATH}/root/
 
   # Wait for dnsmasq service to start
   while (! docker ps | grep esp-dnsmasq > /dev/null 2>&1 ); do 
