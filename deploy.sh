@@ -19,7 +19,7 @@ if (! which docker-compose > /dev/null 2>&1); then
 		chmod a+x /usr/local/bin/docker-compose
 fi
 
-if [ -z ${ESP_VERSION+x} ];
+if [ -z ${ESP_VERSION+x} ]; then
     ESP_VERSION=master
 fi
 
