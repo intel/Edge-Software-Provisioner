@@ -28,5 +28,4 @@ while (! ls /opt/esp/run.sh > /dev/null 2>&1 ); do \
 	echo -n "."; \
 	sleep 5; \
 done && \
-./build.sh -C -S -P -g && \
 ./run.sh -n

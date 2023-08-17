@@ -25,7 +25,7 @@ getMyDefaultRoute() {
     if [[ -z "${builder_config_interface+x}" ]]; then
         echo $(ip route show | grep -i 'default via'| awk '{print $3 }')
     else
-        ifDefaultRoute=$(ip route show dev ${builder_config_interface} | grep -i 'default via'| awk '{print $3 }')
+        ifDefaultRoute=$(ip route show dev ${builder_config_interface} | grep -i 'default via'| awk '{print $3 }' | head -n 1 )
         if [[ -z "${ifDefaultRoute=x}" ]]; then
             # if no route is set for this interface then use the IP Address for this interface
             echo $(getMyIp)
@@ -49,10 +49,10 @@ getMySubnet() {
 
 detectDHCP() {
     if [[ -z "${builder_config_interface+x}" ]]; then
-        local ip=$(docker run -it --rm --net=host --entrypoint="" intel/esp-dnsmasq sh -c 'nmap --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}" | head -n 1' )
+        local ip=$(docker run --rm --net=host --entrypoint="" intel/esp-dnsmasq sh -c 'nmap --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}" | head- n 1' )
         echo ${ip} | tr -d '\r' 2> /dev/null
     else
-        local ip=$(docker run -it --rm --net=host -e INTERFACE=${builder_config_interface} --entrypoint="" intel/esp-dnsmasq sh -c 'nmap -e ${INTERFACE} --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}" | head -n 1' )
+        local ip=$(docker run --rm --net=host -e INTERFACE=${builder_config_interface} --entrypoint="" intel/esp-dnsmasq sh -c 'nmap -e ${INTERFACE} --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}" | head -n 1' )
         echo ${ip} | tr -d '\r' 2> /dev/null
     fi
 }
