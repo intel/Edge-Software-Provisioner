@@ -111,7 +111,7 @@ Target Devices will be connected on the same LAN as the Edge Software Provisione
 
   1. Copy the following line to deploy Intel Edge Software Provisioner
   ```bash
-  wget --no-check-certificate -O- https://raw.githubusercontent.com/intel/Edge-Software-Provisioner/v3.1.2/deploy.sh | bash -s -
+  export ESP_VERSION=master && wget --no-check-certificate -O- https://raw.githubusercontent.com/intel/Edge-Software-Provisioner/${ESP_VERSION}/deploy.sh | bash -s -
   ```
 
 ## Quick Installation Guide

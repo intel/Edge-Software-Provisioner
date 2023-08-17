@@ -47,9 +47,9 @@ getMySubnet() {
     echo $(echo $(getMyIp) | awk -F'.' '{print $1,$2,$3}' OFS='.' )
 }
 
-detectDHCP() {
+detectDHCP() { 
     if [[ -z "${builder_config_interface+x}" ]]; then
-        local ip=$(docker run --rm --net=host --entrypoint="" intel/esp-dnsmasq sh -c 'nmap --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}" | head- n 1' )
+        local ip=$(docker run --rm --net=host --entrypoint="" intel/esp-dnsmasq sh -c 'nmap --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}" | head -n 1' )
         echo ${ip} | tr -d '\r' 2> /dev/null
     else
         local ip=$(docker run --rm --net=host -e INTERFACE=${builder_config_interface} --entrypoint="" intel/esp-dnsmasq sh -c 'nmap -e ${INTERFACE} --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}" | head -n 1' )

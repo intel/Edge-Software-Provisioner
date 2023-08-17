@@ -19,9 +19,13 @@ if (! which docker-compose > /dev/null 2>&1); then
 		chmod a+x /usr/local/bin/docker-compose
 fi
 
+if [ -z ${ESP_VERSION+x} ];
+    ESP_VERSION=master
+fi
+
 mkdir -p /opt/esp && \
 cd /opt/esp && \
-wget --no-check-certificate -O /opt/esp/docker-compose.yml https://raw.githubusercontent.com/intel/Edge-Software-Provisioner/v3.1.2/compose/docker-compose.yml && \
+wget --no-check-certificate -O /opt/esp/docker-compose.yml https://raw.githubusercontent.com/intel/Edge-Software-Provisioner/${ESP_VERSION}/compose/docker-compose.yml && \
 docker-compose up -d core mirror && \
 echo "Waiting for Intel ESP images to be downloaded." && \
 while (! ls /opt/esp/run.sh > /dev/null 2>&1 ); do \
