@@ -94,7 +94,7 @@ if [ ! -d ${BUILDER_PATH}/root/.git ] && [ ! -f ${BUILDER_PATH}/root/.git ]; the
     sleep 1; 
   done
 
-  ./build.sh -C -S -g && \
+  ./build.sh -C -S -g -n && \
   echo "Watching for changes in ${BUILDER_PATH}/conf/config.yml" && \
   inotifywait -e modify -m ${BUILDER_PATH}/conf/ |
   while read -r directory events filename; do
