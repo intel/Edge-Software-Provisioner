@@ -145,7 +145,7 @@ else
 fi
 
 if [[ "${NO_TAIL_LOGS}" == "true" ]]; then
-    printBanner "${C_GREEN}Run script completed!"
+    printBanner "${C_GREEN}Intel Edge Software Provisioner is up!"
 else
     printBanner "${C_GREEN}Following Logs..."
     printMsg ""
