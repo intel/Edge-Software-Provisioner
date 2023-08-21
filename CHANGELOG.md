@@ -233,7 +233,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Known Problem
 - Missing instructions of how to build the boot.wim, boot.sdi and BCD from Microsoft ADK
 
-## [3.1.2] - 2023-08-17
+## [3.1.2] - 2023-08-21
 ### Added
 - Added progress logging from ESP uOS to ESP Services
 - Added support for airgapped environments
