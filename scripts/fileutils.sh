@@ -281,7 +281,7 @@ downloadBaseOSFile() {
     local target_dir="/srv/tftp/images/${profileName}"
 
     run "${message}" \
-        "docker run --rm ${DOCKER_RUN_ARGS} -v ${TFTP_IMAGES}/${profileName}:/tmp/files -w /tmp/files --entrypoint="" builder-core wget ${url} -c -O ${filename}" \
+        "docker run --rm ${DOCKER_RUN_ARGS} -v ${TFTP_IMAGES}/${profileName}:/tmp/files -w /tmp/files --entrypoint="" intel/esp-core wget ${url} -c -O ${filename}" \
         ${LOG_FILE}
 }
 
@@ -295,12 +295,12 @@ downloadPublicFile() {
     if [[ -z "${token}" || ${token} == "None" ]]; then
         # If the token is not given, don't supply any token headers
         run "${message}" \
-            "docker run --rm ${DOCKER_RUN_ARGS} -v ${directory}:/tmp/files -w /tmp/files --entrypoint="" builder-core wget ${source} -c -O ${fileName}" \
+            "docker run --rm ${DOCKER_RUN_ARGS} -v ${directory}:/tmp/files -w /tmp/files --entrypoint="" intel/esp-core wget ${source} -c -O ${fileName}" \
             ${LOG_FILE}
     else
         # The token is defined, so supply the token headers
         run "${message}" \
-            "docker run --rm ${DOCKER_RUN_ARGS} -v ${directory}:/tmp/files -w /tmp/files --entrypoint="" builder-core wget --header 'Authorization: token ${token}' ${source} -c -O ${fileName}" \
+            "docker run --rm ${DOCKER_RUN_ARGS} -v ${directory}:/tmp/files -w /tmp/files --entrypoint="" intel/esp-core wget --header 'Authorization: token ${token}' ${source} -c -O ${fileName}" \
             ${LOG_FILE}
     fi
 }
@@ -321,7 +321,7 @@ downloadS3File() {
     AWS_ACCESS_KEY_ID=${accessKey} \
     AWS_SECRET_ACCESS_KEY=${secretKey} \
     run "${message}" \
-        "docker run --rm ${DOCKER_RUN_ARGS} --env AWS_ACCESS_KEY_ID=${accessKey} --env AWS_SECRET_ACCESS_KEY=${secretKey} --env AWS_DEFAULT_REGION=${region} -v ${directory}:/tmp/files builder-aws-cli aws s3api get-object --bucket ${bucket} --key ${key} /tmp/files/${fileName}" \
+        "docker run --rm ${DOCKER_RUN_ARGS} --env AWS_ACCESS_KEY_ID=${accessKey} --env AWS_SECRET_ACCESS_KEY=${secretKey} --env AWS_DEFAULT_REGION=${region} -v ${directory}:/tmp/files intel/esp-aws-cli aws s3api get-object --bucket ${bucket} --key ${key} /tmp/files/${fileName}" \
         ${LOG_FILE}
 }
 

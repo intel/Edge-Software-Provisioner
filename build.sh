@@ -139,27 +139,34 @@ if [ "${UOS_KERNEL}" == "redhat" ] && [ ! -f /etc/redhat-release ]; then
     exit
 fi
 
+if (! which docker-compose > /dev/null 2>&1); then
+    printBanner "Installing Docker Compose..."
+    logMsg "Installing Docker Compose..."
+    mkdir -p /usr/local/bin
+    wget --no-check-certificate -qO /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)"
+    chmod a+x /usr/local/bin/docker-compose
+fi
+
 if [[ "${TAG}" != "" ]]; then
     export BUILD_IMAGES="false"
     export SKIP_PROFILES="true"
-    if (docker images | grep builder-core >/dev/null 2>&1); then
+    if (docker images | grep esp-core >/dev/null 2>&1); then
         printBanner "Retagging container images..."
         logMsg "Retagging container images..."
         mkdir -p output
         cp docker-compose.yml output/docker-compose.yml
-        for image in $(docker images | grep builder- | grep -v /builder | grep -v ${TAG} | awk '{print $3}'); do 
+        ESP_VERSION=$(git rev-parse --abbrev-ref HEAD)
+        if [ "${ESP_VERSION}" == "master" ] || [ "${ESP_VERSION}" == "main" ]; then
+            ESP_VERSION=latest
+        fi
+        for image in $(docker images | grep 'intel/esp-.\+\s\+[latest|.......]' | grep -v ${ESP_VERSION} | awk '{print $3}'); do 
             echo "."
-            docker tag ${image} ${TAG}/$(docker images | grep ${image} | grep -v /builder | grep -v ${TAG} | awk '{print $1}' | head -n 1)
-            cur_image=$(docker images | grep ${image} | grep -v /builder | grep -v ${TAG} | awk '{print $1}' | head -n 1)
-            new_image=${TAG}/$(docker images | grep ${image} | grep -v /builder | grep -v ${TAG} | awk '{print $1}' | head -n 1)
-            sed -i "s#image: ${cur_image}#image: ${new_image}#" output/docker-compose.yml
-        done
-        for image in $(docker images | grep "uos/" | grep -v ${TAG} | awk '{print $3}'); do 
-            echo "."
-            cur_image=$(docker images | grep ${image} | grep -v ${TAG} | awk '{print $1}' | head -n 1)
-            ver_image=$(docker images | grep ${image} | grep -v ${TAG} | awk '{print $2}' | head -n 1)
-            new_image=${TAG}/${cur_image/uos\//uos-}
-            docker tag ${image} ${new_image}:${ver_image}
+            cur_image=$(docker images | grep ${image} | grep -v ${ESP_VERSION} | awk '{print $1}' | head -n 1)
+            new_image=${TAG}/${cur_image/intel\/}:${ESP_VERSION}
+            docker tag ${image} ${new_image}
+            sed -i "s#image:  ${cur_image}#image:  ${new_image}#" output/docker-compose.yml
+            sed -i "s#${cur_image} #${new_image} #" output/docker-compose.yml
+            sed -i "s# ${cur_image}# ${new_image}#" output/docker-compose.yml
         done
         printBanner "Retagging container images completed.  You can find a new docker-compose.yml file at 'output/docker-compose.yml'"
         logMsg "Retagging container images completed."
@@ -173,14 +180,17 @@ fi
 if [[ "${PUSH}" != "" ]]; then
     export BUILD_IMAGES="false"
     export SKIP_PROFILES="true"
-    if (docker images | grep ${PUSH}/builder-core > /dev/null 2>&1); then
+    ESP_VERSION=$(git rev-parse --abbrev-ref HEAD)
+    if [ "${ESP_VERSION}" == "master" ] || [ "${ESP_VERSION}" == "main" ]; then
+        ESP_VERSION=latest
+    fi
+    if (docker images | grep ${PUSH}/esp-core > /dev/null 2>&1); then
         printBanner "Pushing container images. (NOTE: run 'docker login' first if login required otherwise this command will fail.)"
         logMsg "Pushing container images..."
-        for image in $(docker images | grep ${PUSH}/builder- | grep -v none | awk '{print $1}'); do 
-            docker push ${image}:$(docker images | grep "${image} " | grep -v none | awk '{print $2}')
-        done
-        for image in $(docker images | grep "${PUSH}/uos-" | grep -v none | awk '{print $1}'); do 
-            docker push ${image}:$(docker images | grep "${image} " | grep -v none | awk '{print $2}')
+        for image in $(docker images | grep ${PUSH}'/esp-.\+\s\+'${ESP_VERSION} | grep -v none | awk '{print $1}'); do
+            printBanner "Pushing container ${image}:${ESP_VERSION}..."
+            logMsg "Pushing container ${image}:${ESP_VERSION}..."
+            docker push ${image}:${ESP_VERSION}
         done
     else
         printBanner "Missing container images with prefix '${PUSH}'..."
@@ -195,11 +205,11 @@ if [ -f conf/.build.lock ]; then
         printBanner "Build in progress. If a build is not in progress, confirm first before removing 'conf/.build.lock'."
         exit 1
     fi
-    logMsg "Build in progress. If this is incorrect, confirm first from the logs of '$(docker ps | grep builder-core | awk '{print $11}')' before removing 'conf/.build.lock'..."
+    logMsg "Build in progress. If this is incorrect, confirm first from the logs of '$(docker ps | grep esp-core | awk '{print $11}')' before removing 'conf/.build.lock'..."
     printBanner "Build in progress. If a build is not in progress, confirm first before removing 'conf/.build.lock'."
-    printMsg "Showing last 10 lines of '$(docker ps | grep builder-core | awk '{print $11}')' to see if its running with this command: \"docker logs $(docker ps | grep builder-core | awk '{print $11}')\""
-    printBanner "$(docker ps | grep builder-core | awk '{print $11}') logs:"
-    docker logs $(docker ps | grep builder-core | awk '{print $1}') | tail -10
+    printMsg "Showing last 10 lines of '$(docker ps | grep esp-core | awk '{print $11}')' to see if its running with this command: \"docker logs $(docker ps | grep esp-core | awk '{print $11}')\""
+    printBanner "$(docker ps | grep esp-core | awk '{print $11}') logs:"
+    docker logs $(docker ps | grep esp-core | awk '{print $1}') | tail -10
     printMsg ""
 
     read -r -p "  Would you like to remove the lock file 'conf/.build.lock'? [y/n]: " answer
@@ -338,71 +348,84 @@ if [[ "${BUILD_IMAGES}" == "true" ]]; then
 
     # Build the aws-cli image
     if [[ "${builder_config_disable_aws_cli-x}" == "true" ]]; then
-        printMsg "(1/11) SKIPPING: Building builder-aws-cli"
-        logMsg "(1/11) SKIPPING: Building builder-aws-cli"
+        printMsg "(1/12) SKIPPING: Building intel/esp-aws-cli"
+        logMsg "(1/12) SKIPPING: Building intel/esp-aws-cli"
     else
-        run "(1/11) Building builder-aws-cli" \
-            "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-aws-cli dockerfiles/aws-cli" \
+        run "(1/12) Building intel/esp-aws-cli" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t intel/esp-aws-cli dockerfiles/aws-cli" \
             ${LOG_FILE}
     fi
 
     # Build the git image
-    run "(2/11) Building builder-git" \
-        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-git dockerfiles/git" \
+    run "(2/12) Building intel/esp-git" \
+        "docker build --rm ${DOCKER_BUILD_ARGS} -t intel/esp-git dockerfiles/git" \
         ${LOG_FILE}
 
     # Build the dnsmasq image
     if [[ "${builder_config_disable_dnsmasq-x}" == "true" ]]; then
-        printMsg "(3/11) SKIPPING: Building builder-dnsmasq"
-        logMsg "(3/11) SKIPPING: Building builder-dnsmasq"
+        printMsg "(3/12) SKIPPING: Building intel/esp-dnsmasq"
+        logMsg "(3/12) SKIPPING: Building intel/esp-dnsmasq"
     else
-        run "(3/11) Building builder-dnsmasq (~10 min)" \
-            "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-dnsmasq dockerfiles/dnsmasq" \
+        run "(3/12) Building intel/esp-dnsmasq (~10 min)" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t intel/esp-dnsmasq dockerfiles/dnsmasq" \
             ${LOG_FILE}
     fi
 
     # Build the squid image
-    run "(4/11) Building builder-squid" \
-        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-squid dockerfiles/squid" \
+    run "(4/12) Building intel/esp-squid" \
+        "docker build --rm ${DOCKER_BUILD_ARGS} -t intel/esp-squid dockerfiles/squid" \
         ${LOG_FILE}
 
     # Build the web image
-    run "(5/11) Building builder-web" \
-        "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-web dockerfiles/nginx" \
+    run "(5/12) Building intel/esp-web" \
+        "docker build --rm ${DOCKER_BUILD_ARGS} -t intel/esp-web dockerfiles/nginx" \
         ${LOG_FILE}
 
     # Build the gitea image
     if [[ "${builder_config_disable_gitea-x}" == "true" ]]; then
-        printMsg "(6/11) SKIPPING: Building builder-gitea"
-        logMsg "(6/11) SKIPPING: Building builder-gitea"
+        printMsg "(6/12) SKIPPING: Building intel/esp-gitea"
+        logMsg "(6/12) SKIPPING: Building intel/esp-gitea"
     else
-        run "(6/11) Building builder-gitea" \
-            "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-gitea dockerfiles/gitea" \
+        run "(6/12) Building intel/esp-gitea" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t intel/esp-gitea dockerfiles/gitea" \
             ${LOG_FILE}
     fi
 
     # Build the qemu image
     if [[ "${builder_config_disable_qemu-x}" == "true" ]]; then
-        printMsg "(7/11) SKIPPING: Building builder-qemu"
-        logMsg "(7/11) SKIPPING: Building builder-qemu"
+        printMsg "(7/12) SKIPPING: Building intel/esp-qemu"
+        logMsg "(7/12) SKIPPING: Building intel/esp-qemu"
     else
-        run "(7/11) Building builder-qemu" \
-            "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-qemu dockerfiles/qemu" \
+        run "(7/12) Building intel/esp-qemu" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t intel/esp-qemu dockerfiles/qemu" \
             ${LOG_FILE}
     fi
 
     # Build the smb image
     if [[ "${builder_config_disable_smb-x}" == "true" ]]; then
-        printMsg "(8/11) SKIPPING: Building builder-smb"
-        logMsg "(8/11) SKIPPING: Building builder-smb"
+        printMsg "(8/12) SKIPPING: Building intel/esp-smb"
+        logMsg "(8/12) SKIPPING: Building intel/esp-smb"
     else
-        run "(8/11) Building builder-smb" \
-            "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-smb dockerfiles/smb" \
+        run "(8/12) Building intel/esp-smb" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t intel/esp-smb dockerfiles/smb" \
             ${LOG_FILE}
     fi
 
+    # Build logging server / logging agent image
+    if [[ "${builder_config_disable_fluent_logging-x}" == "true" ]]; then
+        printMsg "(9/12) SKIPPING: Building intel/esp-logging-agent"
+        logMsg "(9/12) SKIPPING: Building intel/esp-logging-agent"
+    else
+        run "(9/12) Building intel/esp-logging-agent" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t intel/esp-logging-agent dockerfiles/logging-agent" \
+            ${LOG_FILE}
+        
+        source "scripts/containerutils.sh"
+        saveDockerImage
+    fi
+
     # Build the core image
-    run "(9/11) Building builder-core" \
+    run "(10/12) Building intel/esp-core" \
         "docker run -t --rm ${DOCKER_RUN_ARGS} --privileged -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
         cd /work && \
         mkdir -p dockerfiles/core/files/conf/ && \
@@ -415,29 +438,29 @@ if [[ "${BUILD_IMAGES}" == "true" ]]; then
         mkdir -p ./dockerfiles/core/files/data/srv/tftp/images/uos/ && \
         rsync -rtc ./data/srv/tftp/images/uos/initrd ./dockerfiles/core/files/data/srv/tftp/images/uos/initrd && \
         rsync -rtc ./data/srv/tftp/images/uos/vmlinuz ./dockerfiles/core/files/data/srv/tftp/images/uos/vmlinuz'; \
-        docker build --rm ${DOCKER_BUILD_ARGS} -t builder-core dockerfiles/core" \
+        docker build --rm ${DOCKER_BUILD_ARGS} -t intel/esp-core dockerfiles/core" \
         ${LOG_FILE}
 
     # Build the certbot image
     if [[ "${builder_config_disable_certbot-x}" == "true" ]]; then
-        printMsg "(10/11) SKIPPING: Building builder-certbot"
-        logMsg "(10/11) SKIPPING: Building builder-certbot"
+        printMsg "(11/12) SKIPPING: Building intel/esp-certbot"
+        logMsg "(11/12) SKIPPING: Building intel/esp-certbot"
     else
-        run "(10/11) Building builder-certbot" \
+        run "(11/12) Building intel/esp-certbot" \
             "docker run -t --rm ${DOCKER_RUN_ARGS} --privileged -v $(pwd):/work alpine sh -c 'apk update && apk add --no-cache rsync && \
             cd /work && \
             rsync -rtc ./scripts ./dockerfiles/certbot/'; \
-            docker build --rm ${DOCKER_BUILD_ARGS} -t builder-certbot dockerfiles/certbot" \
+            docker build --rm ${DOCKER_BUILD_ARGS} -t intel/esp-certbot dockerfiles/certbot" \
             ${LOG_FILE}
     fi
 
     # Build the dynamic profile image
     if [[ "${builder_config_disable_dyn_profile-x}" == "true" ]]; then
-        printMsg "(11/11) SKIPPING: Building builder-dyn-profile"
-        logMsg "(11/11) SKIPPING: Building builder-dyn-profile"
+        printMsg "(12/12) SKIPPING: Building intel/esp-dyn-profile"
+        logMsg "(12/12) SKIPPING: Building intel/esp-dyn-profile"
     else
-        run "(11/11) Building dynamic profile service" \
-            "docker build --rm ${DOCKER_BUILD_ARGS} -t builder-dyn-profile dockerfiles/dyn-profile" \
+        run "(12/12) Building intel/esp-dyn-profile" \
+            "docker build --rm ${DOCKER_BUILD_ARGS} -t intel/esp-dyn-profile dockerfiles/dyn-profile" \
             ${LOG_FILE}
     fi
 
@@ -472,6 +495,12 @@ else
     printBanner "Starting ${C_GREEN}Gitea..."
     logMsg "Starting Gitea..."
     startGitea
+fi
+
+if [[ "${builder_config_airgapped_mode-x}" == "true" ]]; then
+    export SKIP_PROFILES="true"
+    printBanner "Using local ${C_GREEN}Profiles..."
+    logMsg "Using local Profiles..."
 fi
 
 if [[ "${SKIP_PROFILES}" == "false" ]]; then
@@ -514,6 +543,20 @@ else
     setDynamicProfileArgs
     exportProfileInfo
 fi
+
+#Enable/Disable fluent logging for dnsmasq service
+if [[ "${builder_config_disable_fluent_logging-false}" == "false" ]]; then
+    if grep -q '# driver: "fluentd"' docker-compose.yml; then
+        sed -zEi 's|driver: "json-file"\n[^\n]*options:\n[^\n]*max-file: "5"\n[^\n]*max-size: "1m"(\n[^\n]*# driver: "fluentd")|# driver: "json-file"\n      # options:\n        # max-file: "5"\n        # max-size: "1m"\1|' docker-compose.yml
+        sed -zEi 's|# driver: "fluentd"[^.]*"localhost:24224"|driver: "fluentd"\n      options:\n        fluentd-address: "localhost:24224"|' docker-compose.yml
+    fi
+else
+    if grep -q '  driver: "fluentd"' docker-compose.yml; then
+        sed -zEi 's|  driver: "fluentd"[^.]*"localhost:24224"|  # driver: "fluentd"\n      # options:\n        # fluentd-address: "localhost:24224"|' docker-compose.yml
+        sed -zEi 's|# driver: "json-file"[^.]*(\n[^\n]*driver: "fluentd")|driver: "json-file"\n      options:\n        max-file: "5"\n        max-size: "1m"\1|' docker-compose.yml
+    fi
+fi
+
 # Finishing message
 printBanner "${C_GREEN}Build Complete!"
 logOkMsg "Build Complete!"

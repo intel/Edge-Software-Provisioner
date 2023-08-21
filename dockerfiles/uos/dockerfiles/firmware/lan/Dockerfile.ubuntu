@@ -30,7 +30,13 @@ RUN mkdir /out
 RUN FIRMWARE_FILE=$(curl -s https://mirrors.edge.kernel.org/ubuntu/pool/main/l/linux-firmware/ | grep -Eo linux-firmware_${FIRMWARE}.\[0-9\]\[\-\_\.0-9a-zA-Z\]+_all.deb | head -n1) && \
     wget https://mirrors.edge.kernel.org/ubuntu/pool/main/l/linux-firmware/${FIRMWARE_FILE} && \
     ar x ${FIRMWARE_FILE} && \
-    tar -xf data.tar.xz && \
+    tar --wildcards -xf data.tar.xz \
+        ./lib/firmware/intel \
+        ./lib/firmware/brcm \
+        ./lib/firmware/mrvl \
+        ./lib/firmware/e100 \
+        ./lib/firmware/ath* \
+        ./lib/firmware/rt* && \
     mv ./lib /out/
 
 FROM scratch

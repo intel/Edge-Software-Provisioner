@@ -11,9 +11,9 @@ networks:
 
 services:
   core:
-    image:  intel/esp-core
+    image: intel/esp-core:v3.1.2
     environment:
-      - CONTAINER_IMAGES=intel/esp-core intel/esp-gitea intel/esp-dnsmasq intel/esp-squid intel/esp-web intel/esp-git intel/esp-aws-cli intel/esp-uos-builder intel/esp-qemu intel/esp-certbot intel/esp-smb intel/esp-dyn-profile intel/esp-logging-agent intel/esp-uos-kernel intel/esp-uos-wifi intel/esp-uos-firmware-wifi intel/esp-uos-firmware-lan intel/esp-uos-dyninit
+      - CONTAINER_IMAGES=intel/esp-core:v3.1.2 intel/esp-gitea:v3.1.2 intel/esp-dnsmasq:v3.1.2 intel/esp-squid:v3.1.2 intel/esp-web:v3.1.2 intel/esp-git:v3.1.2 intel/esp-aws-cli:v3.1.2 intel/esp-uos-builder:v3.1.2 intel/esp-qemu:v3.1.2 intel/esp-certbot:v3.1.2 intel/esp-smb:v3.1.2 intel/esp-dyn-profile:v3.1.2 intel/esp-logging-agent:v3.1.2 intel/esp-uos-kernel:v3.1.2 intel/esp-uos-wifi:v3.1.2 intel/esp-uos-firmware-wifi:v3.1.2 intel/esp-uos-firmware-lan:v3.1.2 intel/esp-uos-dyninit:v3.1.2
       - BUILDER_PATH=${PWD}
       - PATH=${PWD}:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin
       - http_proxy=${http_proxy:-}
@@ -45,7 +45,7 @@ services:
         max-size: "1m"
 
   web:
-    image:  intel/esp-web
+    image: intel/esp-web:v3.1.2
     restart: always
     environment:
       - CN=edgebuilder.local
@@ -88,7 +88,7 @@ services:
         max-size: "1m"
 
   certbot:
-    image:  intel/esp-certbot
+    image: intel/esp-certbot:v3.1.2
     restart: on-failure
     environment:
       - http_proxy=${http_proxy:-}
@@ -116,7 +116,7 @@ services:
         max-size: "1m"
 
   dnsmasq:
-    image:  intel/esp-dnsmasq
+    image: intel/esp-dnsmasq:v3.1.2
     restart: always
     environment:
       - http_proxy=${http_proxy:-}
@@ -183,7 +183,7 @@ services:
         max-size: "1m"
 
   squid:
-    image:  intel/esp-squid
+    image: intel/esp-squid:v3.1.2
     restart: always
     environment:
       - CN=squid.local
@@ -215,7 +215,7 @@ services:
         max-size: "1m"
 
   mirror:
-    image:  intel/esp-gitea
+    image: intel/esp-gitea:v3.1.2
     environment:
       - USER_UID=1000
       - USER_GID=1000
@@ -250,7 +250,7 @@ services:
         max-size: "1m"
 
   smb:
-    image:  intel/esp-smb
+    image: intel/esp-smb:v3.1.2
     restart: always
     environment:
       - http_proxy=${http_proxy:-}
@@ -277,7 +277,7 @@ services:
         max-size: "1m"
 
   dyn-profile:
-    image:  intel/esp-dyn-profile
+    image: intel/esp-dyn-profile:v3.1.2
     ports:
       - 8580:8080
     depends_on:

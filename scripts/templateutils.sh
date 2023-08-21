@@ -25,7 +25,7 @@ getMyDefaultRoute() {
     if [[ -z "${builder_config_interface+x}" ]]; then
         echo $(ip route show | grep -i 'default via'| awk '{print $3 }')
     else
-        ifDefaultRoute=$(ip route show dev ${builder_config_interface} | grep -i 'default via'| awk '{print $3 }')
+        ifDefaultRoute=$(ip route show dev ${builder_config_interface} | grep -i 'default via'| awk '{print $3 }' | head -n 1 )
         if [[ -z "${ifDefaultRoute=x}" ]]; then
             # if no route is set for this interface then use the IP Address for this interface
             echo $(getMyIp)
@@ -47,18 +47,18 @@ getMySubnet() {
     echo $(echo $(getMyIp) | awk -F'.' '{print $1,$2,$3}' OFS='.' )
 }
 
-detectDHCP() {
+detectDHCP() { 
     if [[ -z "${builder_config_interface+x}" ]]; then
-        local ip=$(docker run -it --rm --net=host --entrypoint="" builder-dnsmasq sh -c 'nmap --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}" | head -n 1' )
+        local ip=$(docker run --rm --net=host --entrypoint="" intel/esp-dnsmasq sh -c 'nmap --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}" | head -n 1' )
         echo ${ip} | tr -d '\r' 2> /dev/null
     else
-        local ip=$(docker run -it --rm --net=host -e INTERFACE=${builder_config_interface} --entrypoint="" builder-dnsmasq sh -c 'nmap -e ${INTERFACE} --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}" | head -n 1' )
+        local ip=$(docker run --rm --net=host -e INTERFACE=${builder_config_interface} --entrypoint="" intel/esp-dnsmasq sh -c 'nmap -e ${INTERFACE} --script broadcast-dhcp-discover 2> /dev/null | grep Identifier | awk "{print \$4}" | head -n 1' )
         echo ${ip} | tr -d '\r' 2> /dev/null
     fi
 }
 
 getESPDnsmasqProcess() {
-    local dnsmasq_process_id=$(netstat -tunlp |grep dnsmasq |grep :67 | awk "{print \$6}" | sed "s#\/.*##")
+    local dnsmasq_process_id=$(docker run -it --rm --privileged --pid=host --net=host --entrypoint="" intel/esp-core sh -c 'netstat -tunlp |grep dnsmasq |grep :67 | awk "{print \$6}" | sed "s#\/.*##"')
     local regex='^[0-9]+$'
     if [[ ! -z ${dnsmasq_process_id+x} ]] && [[ ${dnsmasq_process_id} =~ ${regex} ]]; then
         local espDir=$(realpath  $(dirname -- "${BASH_SOURCE}" ) | sed "s#scripts##")
@@ -198,16 +198,20 @@ renderSystemNetworkTemplates() {
     local dnsMasqConfDir="data/etc"
     local pxeMenuFileDir="data/srv/tftp/pxelinux.cfg"
     local pxeMenuLegacyFileDir="data/srv/tftp/pxelinux.cfg_legacy"
+    local loggingServerConfDir="data/etc/"
     makeDirectory ${dnsMasqConfDir}
     makeDirectory ${pxeMenuFileDir}
     makeDirectory ${pxeMenuLegacyFileDir}
+    makeDirectory ${loggingServerConfDir}
 
     # Set file locations
     local dnsMasqConf="${dnsMasqConfDir}/dnsmasq.conf"
     local pxeMenuFile="${pxeMenuFileDir}/default"
     local pxeLegacyMenuFile="${pxeMenuLegacyFileDir}/default"
+    local loggingServerConf="${loggingServerConfDir}/fluent-bit.conf"
     # Set template file locations
     local tmpDnsMasqConf="template/dnsmasq/dnsmasq.conf"
+    local tmpLoggingServerConf="template/logging-server/fluent-bit.conf"
     if [[ ${DYNAMIC_PROFILE} == "false" ]];then
         local tmpPxeMenuFile=$(getTmpPxeMenuLocation)
         local tmpIpxeMenuFile=$(getTmpIpxeMenuLocation)
@@ -216,10 +220,12 @@ renderSystemNetworkTemplates() {
         local tmpIpxeMenuFile="template/ipxe/menu.ipxe.head"
     fi
 
+
     # Copy template files
     copySampleFile ${tmpDnsMasqConf} ${tmpDnsMasqConf}.modified
     copySampleFile ${tmpPxeMenuFile} ${tmpPxeMenuFile}.modified
     copySampleFile ${tmpIpxeMenuFile} ${tmpIpxeMenuFile}.modified
+    copySampleFile ${tmpLoggingServerConf} ${tmpLoggingServerConf}.modified
 
     # Replace the template variables with their appropriate values
     local dhcpRangeMinimumPlaceholder=("@@DHCP_MIN@@" "@@ESP_DHCP_MIN@@" "@@RNI_DHCP_MIN@@" "@@EDGEBUILDER_DHCP_MIN@@")
@@ -231,6 +237,8 @@ renderSystemNetworkTemplates() {
     local networkDnsPrimaryPlaceholder=("@@NETWORK_DNS_PRIMARY@@" "@@ESP_NETWORK_DNS_PRIMARY@@" "@@RNI_NETWORK_DNS_PRIMARY@@" "@@EDGEBUILDER_NETWORK_DNS_PRIMARY@@")
     local networkDnsSecondaryPlaceholder=("@@NETWORK_DNS_SECONDARY@@" "@@ESP_NETWORK_DNS_SECONDARY@@" "@@RNI_NETWORK_DNS_SECONDARY@@" "@@EDGEBUILDER_NETWORK_DNS_SECONDARY@@")
     local pxeCommentPlaceholder=("@@PXE_COMMENT@@" "@@ESP_PXE_COMMENT@@" "@@RNI_PXE_COMMENT@@" "@@EDGEBUILDER_PXE_COMMENT@@")
+    local remoteLoggingServerPlaceholder=("@@LOGGING_SERVER@@" "@@LOG_SERVER@@" "@@PROVISIONING_LOGGING_SERVER@@")
+    local remoteLoggingServiceURIPlaceholder=("@@LOGGING_URI@@" "@@LOG_SERVICE_URI@@" "@@PROVISIONING_LOGGING_URI@@")
     local interfacePlaceholder=("@@INTERFACE_BINDING@@" "@@ESP_INTERFACE_BINDING@@" "@@RNI_INTERFACE_BINDING@@")
     local ipMappingPlaceholder=("@@IP_MAPPING@@" "@@ESP_IP_MAPPING@@" "@@RNI_IP_MAPPING@@")
 
@@ -238,7 +246,7 @@ renderSystemNetworkTemplates() {
     # Note that profile-scoped variables are not accessible here.
     # In order to gain access to that scope use the renderTemplate
     # functionality
-    local stgFiles=("${tmpDnsMasqConf}.modified" "${tmpPxeMenuFile}.modified" "${tmpIpxeMenuFile}.modified")
+    local stgFiles=("${tmpDnsMasqConf}.modified" "${tmpPxeMenuFile}.modified" "${tmpIpxeMenuFile}.modified" "${tmpLoggingServerConf}.modified")
     for stgFile in ${stgFiles[@]}; do
         for i in {0..2}
         do
@@ -251,6 +259,9 @@ renderSystemNetworkTemplates() {
             sed -i -e "s/${networkDnsPrimaryPlaceholder[i]}/${builder_config_network_dns_primary}/g" ${stgFile}
             sed -i -e "s/${networkDnsSecondaryPlaceholder[i]}/${builder_config_network_dns_secondary}/g" ${stgFile}
             sed -i -e "s/${pxeCommentPlaceholder[i]}/${builder_config_pxe_comment}/g" ${stgFile}
+            sed -i -e "s/${remoteLoggingServerPlaceholder[i]}/${builder_config_remote_logging_server:-undefined}/g" ${stgFile}
+            sed -i -e "s/${remoteLoggingServiceURIPlaceholder[i]}/${builder_config_remote_logging_service_uri:-undefined}/g" ${stgFile}
+
             if [[ -z "${builder_config_interface+x}" ]]; then
                 sed -i -e "s/${interfacePlaceholder[i]}//g" ${stgFile}
             else
@@ -292,10 +303,12 @@ renderSystemNetworkTemplates() {
     | sed 's#LINUX http://[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/tftp/#LINUX /#g' \
     | sed 's#INITRD http://[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/tftp/#INITRD /#g' \
      > ${pxeLegacyMenuFile}
+     copySampleFile ${tmpLoggingServerConf}.modified ${loggingServerConf}
 
     # Clean up the modified templates
     rm ${tmpDnsMasqConf}.modified
     rm ${tmpPxeMenuFile}.modified
+    rm ${tmpLoggingServerConf}.modified
 
     # Because the PXE menu generation process is a bit more involved,
     # there is another PXE menu artifact that needs to be cleaned up.

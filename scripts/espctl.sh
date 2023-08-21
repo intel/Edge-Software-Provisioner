@@ -104,6 +104,7 @@ if [[ "${UP}" == "true" ]] || [[ "${RESTART}" == "true" ]]; then
   mkdir -p ./data/certbot/lib
   mkdir -p ./data/dyn-profile
   mkdir -p ./data/usr/share/nginx/html/smb
+  mkdir -p ./data/etc/fluent-bit
   mkdir -p ./output
 fi
 
@@ -135,6 +136,10 @@ if [[ "${DOWN}" == "true" ]]; then
   if docker ps -a | grep ${CURDIR}_dyn-profile_1 > /dev/null; then
     podman rm ${CURDIR}_dyn-profile_1 -f
   fi
+  if docker ps -a | grep ${CURDIR}_logging-server_1 > /dev/null; then
+    podman rm ${CURDIR}_logging-server_1 -f
+  fi
+  
   umount template/pxe_bg.png >/dev/null 2>&1
   umount data/srv/tftp/images >/dev/null 2>&1
   umount data/srv/tftp/pxelinux.cfg >/dev/null 2>&1
@@ -163,6 +168,9 @@ if [[ "${RESTART}" == "true" ]]; then
   if podman ps | grep ${CURDIR}_dyn-profile_1 > /dev/null; then
     podman restart ${CURDIR}_dyn-profile_1 2> /dev/null
   fi
+  if podman ps | grep ${CURDIR}_logging-server_1 > /dev/null; then
+    podman restart ${CURDIR}_logging-server_1 2> /dev/null
+  fi
 fi
 
 if [[ "${UP}" == "true" ]]; then
@@ -175,7 +183,7 @@ if [[ "${UP}" == "true" ]]; then
       --mount type=bind,source=${PWD}/./data,destination=${PWD}/data,bind-propagation=shared \
       --mount type=bind,source=${PWD}/./dockerfiles/uos,destination=${PWD}/dockerfiles/uos,bind-propagation=shared \
       --mount type=bind,source=${PWD}/./output,destination=${PWD}/output,bind-propagation=shared \
-      --mount type=bind,source=${PWD}/./template,destination=${PWD}/template,bind-propagation=shared builder-core
+      --mount type=bind,source=${PWD}/./template,destination=${PWD}/template,bind-propagation=shared intel/esp-core
     fi
   fi
 
@@ -195,7 +203,7 @@ if [[ "${UP}" == "true" ]]; then
       --mount type=bind,source=${PWD}/./data/srv/tftp/images/uos/,destination=/usr/share/nginx/html/tftp/efi32/images/uos/ \
       --mount type=bind,source=${PWD}/./data/srv/tftp/images/uos/,destination=/usr/share/nginx/html/tftp/efi64/images/uos/ \
       --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/web-cert,destination=/etc/ssl/cert \
-      --mount type=bind,source=${PWD}/./template/nginx,destination=/usr/share/nginx/template builder-web
+      --mount type=bind,source=${PWD}/./template/nginx,destination=/usr/share/nginx/template intel/esp-web
     fi
   fi
 
@@ -215,7 +223,7 @@ if [[ "${UP}" == "true" ]]; then
       --mount type=bind,source=${PWD}/./data/srv/tftp/pxelinux.cfg/,destination=/srv/tftp/efi32/pxelinux.cfg/ \
       --mount type=bind,source=${PWD}/./data/srv/tftp/pxelinux.cfg/,destination=/srv/tftp/efi64/pxelinux.cfg/ \
       --mount type=bind,source=${PWD}/./data/srv/tftp/,destination=/usr/share/nginx/html/tftp/,bind-propagation=shared \
-      --mount type=bind,source=${PWD}/./data/etc,destination=/etc/dnsmasq,bind-propagation=shared builder-dnsmasq
+      --mount type=bind,source=${PWD}/./data/etc,destination=/etc/dnsmasq,bind-propagation=shared intel/esp-dnsmasq
     fi
   fi
 
@@ -233,7 +241,7 @@ if [[ "${UP}" == "true" ]]; then
       --mount type=bind,source=${PWD}/./template/squid,destination=/etc/squid/template \
       --mount type=bind,source=${PWD}/./data/var/cache/squid,destination=/var/spool/squid \
       --mount type=bind,source=${PWD}/./data/var/log/squid,destination=/var/log/squid \
-      --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/squid-cert,destination=/etc/squid-cert builder-squid
+      --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/squid-cert,destination=/etc/squid-cert intel/esp-squid
     fi
   fi
 
@@ -242,14 +250,14 @@ if [[ "${UP}" == "true" ]]; then
       podman run -d --privileged --name=${CURDIR}_mirror_1 --restart=always -p 3003:3000 -p 222:22 -e USER_UID=1000 -e USER_GID=1000 -e DISABLE_REGISTRATION=true -e DEFAULT_PRIVATE=public -e ENABLE_PUSH_CREATE_USER=true -e ENABLE_PUSH_CREATE_ORG=true -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} \
       --mount type=bind,source=${PWD}/./data/gitea,destination=/data \
       --mount type=bind,source=/etc/timezone,destination=/etc/timezone,ro \
-      --mount type=bind,source=/etc/localtime,destination=/etc/localtime,ro builder-gitea
+      --mount type=bind,source=/etc/localtime,destination=/etc/localtime,ro intel/esp-gitea
     fi
   fi
 
   if ! docker ps -a | grep ${CURDIR}_smb_1 > /dev/null; then
     if [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "smb" ]; then
       podman run -d --privileged --name=${CURDIR}_smb_1 --restart=always -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} \
-      --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/smb,destination=/smbshare builder-smb 
+      --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/smb,destination=/smbshare intel/esp-smb 
     fi
   fi
 
@@ -261,7 +269,7 @@ if [[ "${UP}" == "true" ]]; then
       --mount type=bind,source=${PWD}/./data/certbot/www,destination=/var/www/certbot \
       --mount type=bind,source=${PWD}/./data/certbot/lib,destination=/var/lib/letsencrypt \
       --mount type=bind,source=${PWD}/./data/etc/ssl/private,destination=/etc/ssl/private \
-      --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/web-cert,destination=/etc/ssl/cert builder-certbot 
+      --mount type=bind,source=${PWD}/./data/usr/share/nginx/html/web-cert,destination=/etc/ssl/cert intel/esp-certbot 
     fi
   fi
 
@@ -269,7 +277,15 @@ if [[ "${UP}" == "true" ]]; then
     if [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "dyn-profile" ]; then
       podman run -d --privileged --name=${CURDIR}_dyn-profile_1 --restart=always -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} -e host_ip=${HOST_IP:-} -e dyn_url=${DYN_URL:-} -e dyn_url_user=${DYN_URL_USER:-} -e dyn_url_token=${DYN_URL_TOKEN:-} \
       --mount type=bind,source=${PWD}/./conf,destination=${PWD}/conf,bind-propagation=shared \
-      --mount type=bind,source=${PWD}/./data/dyn-profile,destination=/data builder-dyn-profile 
+      --mount type=bind,source=${PWD}/./data/dyn-profile,destination=/data intel/esp-dyn-profile 
+    fi
+  fi
+
+  if ! docker ps -a | grep ${CURDIR}_logging-server_1 > /dev/null; then
+    if [ "${SERVICE}" == "" ] || [ "${SERVICE}" == "logging-server" ]; then
+      podman run -d --privileged --name=${CURDIR}_logging-server_1 --restart=always -e http_proxy=${http_proxy:-} -e https_proxy=${https_proxy:-} -e ftp_proxy=${ftp_proxy:-} -e no_proxy=${no_proxy:-} -e HTTP_PROXY=${HTTP_PROXY:-} -e HTTPS_PROXY=${HTTPS_PROXY:-} -e FTP_PROXY=${FTP_PROXY:-} -e NO_PROXY=${NO_PROXY:-} \
+      --mount type=bind,source=${PWD}/./conf,destination=${PWD}/conf,bind-propagation=shared \
+      --mount type=bind,source=${PWD}/./data/etc,destination=/fluent-bit/etc fluent/fluent-bit 
     fi
   fi
 fi
@@ -302,6 +318,9 @@ if [[ "${LOGS}" == "true" ]]; then
   fi
   if docker ps -a | grep ${CURDIR}_dyn-profile_1 > /dev/null; then
     SERVICES="${CURDIR}_dyn-profile_1 $SERVICES"
+  fi
+  if docker ps -a | grep ${CURDIR}_logging-server_1 > /dev/null; then
+    SERVICES="${CURDIR}_logging-server_1 $SERVICES"
   fi
 
   if [ "${SERVICES}" != "" ]; then

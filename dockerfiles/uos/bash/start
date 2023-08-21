@@ -44,8 +44,8 @@ if [[ $kernel_params = *"httpserver="* ]]; then
   param_httpserver="${tmp%% *}"
 fi
 
-if [[ $kernel_params = *"proxy="* ]]; then
-  tmp="${kernel_params##*proxy=}"
+if [[ $kernel_params = *" proxy="* ]]; then
+  tmp="${kernel_params##* proxy=}"
   param_proxy="${tmp%% *}"
 
   export http_proxy=${param_proxy}
@@ -68,12 +68,18 @@ if [[ $param_dynamicprofile == 'true' ]]; then
   /opt/bootstrap/profile_request
 fi
 
+if [ $(wget http://${param_httpserver}:5557/v2/_catalog -O-) ] 2>/dev/null; then
+    export REGISTRY_MIRROR="--registry-mirror=http://${param_httpserver}:5557"
+elif [ $(wget http://${param_httpserver}:5000/v2/_catalog -O-) ] 2>/dev/null; then
+    export REGISTRY_MIRROR="--registry-mirror=http://${param_httpserver}:5000"
+fi
+
 iptables -L  >/dev/null 2>&1
 if [ $? = 0 ]; then
     # /usr/local/bin/docker-init /usr/local/bin/dockerd &
-    /usr/local/bin/dockerd &
+    /usr/local/bin/dockerd ${REGISTRY_MIRROR} &
 else
-    /usr/local/bin/dockerd --iptables=false &
+    /usr/local/bin/dockerd --iptables=false ${REGISTRY_MIRROR} &
 fi
 
 while (! docker stats --no-stream > /dev/null ); do

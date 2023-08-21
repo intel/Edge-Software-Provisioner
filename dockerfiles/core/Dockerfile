@@ -10,6 +10,7 @@ RUN apk --no-cache add  \
       docker-compose \
       inotify-tools \
       git \
+      net-tools \
       nmap \
       nmap-scripts \
       rsync \

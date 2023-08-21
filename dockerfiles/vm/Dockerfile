@@ -1,7 +1,7 @@
 # Copyright (C) 2020 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM builder-qemu
+FROM intel/esp-qemu
 LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
 
 COPY ${VIRTUAL_DISK} /data/volumes/vm.img

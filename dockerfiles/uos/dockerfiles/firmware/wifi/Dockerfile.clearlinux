@@ -1,0 +1,30 @@
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM alpine:3.14 as build
+LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
+
+ARG CLEARLINUX_RELEASE=36410
+ARG FIRMWARE=wifi-20220509-171
+
+RUN apk update && apk add --no-cache \
+  	bash \
+    wget \
+	  tar \
+    rpm \
+    cpio
+
+WORKDIR /build
+RUN mkdir /out
+
+# https://download.clearlinux.org/releases/34270/clear/x86_64/os/Packages/linux-firmware-wifi-20210208-154.x86_64.rpm
+RUN wget https://download.clearlinux.org/releases/${CLEARLINUX_RELEASE}/clear/x86_64/os/Packages/linux-firmware-${FIRMWARE}.x86_64.rpm
+
+RUN rpm2cpio linux-firmware-${FIRMWARE}.x86_64.rpm | cpio -i --make-directories && \
+    mv usr/lib /out/
+
+FROM scratch
+ENTRYPOINT []
+CMD []
+WORKDIR /
+COPY --from=build /out/lib/ /lib/

@@ -2,7 +2,7 @@
 
 ## Quick Start Guide
 
-To quickly get started follow the [Quick Installation Guide](#quick-installation-guide)
+To quickly get started follow the [Quick Deployment Guide](#quick-deployment-guide)
 
 ## Table of Contents
 
@@ -18,9 +18,11 @@ To quickly get started follow the [Quick Installation Guide](#quick-installation
 
 1. [Setting up your Network](#network-setup)
 
+1. [Quick Deployment Guide](#quick-deployment-guide)
+
 1. [Quick Installation Guide](#quick-installation-guide)
 
-1. [Installing the Edge Software Provisioner (ESP)](#installing-esp)
+1. [Configuring the Edge Software Provisioner (ESP)](#installing-esp)
 
 1. [Upgrading the Edge Software Provisioner (ESP)](#upgrading-esp)
 
@@ -68,7 +70,9 @@ The main executable to setup a device as a Edge Software Provisioner is `build.s
 
   - **Gitea** - optional, used for mirroring git repositories
 
-[Clear Linux](https://github.com/intel/rni-profile-base-clearlinux), [Ubuntu](https://github.com/intel/rni-profile-base-ubuntu) and [RancherOS](https://github.com/intel/rni-profile-base-rancheros) are provided as example profiles.
+  - **Fluent Bit** - optional, used for logging profile progress
+
+[Clear Linux](https://github.com/intel/esp-profile-clearlinux) and [Ubuntu](https://github.com/intel/esp-profile-ubuntu) are provided as example profiles.
 
 ## Prerequisites
 
@@ -87,7 +91,7 @@ The following is required:
 
 The Edge Software Provisioner (ESP) must be in an isolated network and there must only be one ESP in the network.  ESP will detect if there is an existing DHCP or DNS and will configure itself accordingly.  It will also detect if the host has a static or dynamic IP IPv4 address.  If the host is a dynamic IP address and if the IP address changes you must run `./build.sh -S -P && ./run.sh --restart` to update ESP configuration with the new IP address.
 
-WARNING: DO NOT RUN ESP ON YOUR CORPORATE NETWORK. *It must be on an isoloated network.*
+WARNING: DO NOT RUN ESP ON YOUR CORPORATE NETWORK. *It must be on an isolated network.*
 
 NOTE: If using Ubuntu, do not use Snapd Docker, install Docker using aptitude.  Dnsmasq must not been running on the system from some other service.  Please confirm with `ps -auxww | grep dnsmasq`.
 
@@ -100,6 +104,15 @@ The ideal setup is a router with an Internet connection and an x86 device like a
 Because ESP is OS-agnostic and Docker-based, the configuration of your system's network is not something that this guide will cover.
 
 Target Devices will be connected on the same LAN as the Edge Software Provisioner. On target devices, enable PXE Boot in the BIOS if it is not enabled. Most BIOS's have a boot menu option (F12) at POST time. Typically you can press (F12) to alter the boot sequence.
+
+## Quick Deployment Guide
+
+  NOTE: Please read [Network Setup](#network-setup) above before proceeding.  If using Ubuntu, do not use Snapd Docker, install Docker using aptitude.  Dnsmasq must not been running on the system from some other service.  Please confirm with `ps -auxww | grep dnsmasq`.
+
+  1. Copy the following line to deploy Intel Edge Software Provisioner
+  ```bash
+  export ESP_VERSION=master && wget --no-check-certificate -O- https://raw.githubusercontent.com/intel/Edge-Software-Provisioner/${ESP_VERSION}/deploy.sh | bash -s -
+  ```
 
 ## Quick Installation Guide
 
@@ -143,7 +156,7 @@ Target Devices will be connected on the same LAN as the Edge Software Provisione
 
   **Stop rebuilding ESP for each installation! To improve installation efficiency for the next time continue on**
 
-  8. Let's re-tag docker images with your prefix to upload to your Docker Hub account.  The following example will re-tag images to look like `myDockerUser/builder-core:latest`.
+  8. Let's re-tag docker images with your prefix to upload to your Docker Hub account.  The following example will re-tag images to look like `myDockerUser/esp-core:latest`.
   ```bash
   ./build.sh --tag myDockerHubUser
   ```
@@ -165,7 +178,7 @@ Target Devices will be connected on the same LAN as the Edge Software Provisione
 
   **See [Adding and Removing Profiles](#adding-removing-profiles) to update the profile list**
 
-## Installing ESP
+## Configuring ESP
 
 Once the prerequisites and network setup have been taken care of, the steps to deployment are as follows.
 

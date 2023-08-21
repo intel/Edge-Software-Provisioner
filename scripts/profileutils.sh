@@ -61,8 +61,8 @@ cloneProfile() {
     mkdir -p ${WEB_PROFILE}/${name}
 
     if [ -d ${WEB_PROFILE}/${name}/.git ]; then
-        local git_current_remote_url=$(docker run --rm ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${name}:/tmp/profiles -w /tmp/profiles builder-git git remote get-url --all origin)
-        local git_current_branch_name=$(docker run --rm ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${name}:/tmp/profiles -w /tmp/profiles builder-git git rev-parse --abbrev-ref HEAD)
+        local git_current_remote_url=$(docker run --rm ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${name}:/tmp/profiles -w /tmp/profiles intel/esp-git git remote get-url --all origin)
+        local git_current_branch_name=$(docker run --rm ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${name}:/tmp/profiles -w /tmp/profiles intel/esp-git git rev-parse --abbrev-ref HEAD)
         if [ "${git_clone_target}" != "${git_current_remote_url}" ] || [ "${git_branch_name}" != "${git_current_branch_name}" ]; then
             logMsg "Clone - Detected a configuration change in either the git remote or the git branch for the ${name} profile. Will re-create the repository from scratch in order to avoid git tree issues."
             rm -rf  ${WEB_PROFILE}/${name}
@@ -88,7 +88,7 @@ cloneProfile() {
         fi
 
         run "  ${C_GREEN}${name}${T_RESET}: Cloning branch ${git_branch_name} on repo ${git_remote_url} with ssh-agent" \
-            "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}:/tmp/profiles -w /tmp/profiles builder-git git clone ${custom_git_arguments} -v --progress ${git_clone_target} --branch=${git_branch_name} ${name}" \
+            "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}:/tmp/profiles -w /tmp/profiles intel/esp-git git clone ${custom_git_arguments} -v --progress ${git_clone_target} --branch=${git_branch_name} ${name}" \
             ${LOG_FILE}
     else
         printDatedMsg "  Clone - ${C_GREEN}${name}${T_RESET} already exists."
@@ -100,8 +100,8 @@ cloneProfile() {
     else
         mkdir -p ${WEB_PROFILE}/${base_name}
         if [ -d ${WEB_PROFILE}/${base_name}/.git ]; then
-            local git_current_remote_url=$(docker run --rm --privileged ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles -w /tmp/profiles builder-git git remote get-url --all origin)
-            local git_current_branch_name=$(docker run --rm --privileged ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles -w /tmp/profiles builder-git git rev-parse --abbrev-ref HEAD)
+            local git_current_remote_url=$(docker run --rm --privileged ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles -w /tmp/profiles intel/esp-git git remote get-url --all origin)
+            local git_current_branch_name=$(docker run --rm --privileged ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles -w /tmp/profiles intel/esp-git git rev-parse --abbrev-ref HEAD)
             if [ "${git_clone_target}" != "${git_current_remote_url}" ] || [ "${git_base_branch_name}" != "${git_current_branch_name}" ]; then
                 logMsg "Clone - Detected a configuration change in either the git remote or the git branch for the ${base_name} profile. Will re-create the repository from scratch in order to avoid git tree issues."
                 rm -rf  ${WEB_PROFILE}/${base_name}
@@ -126,7 +126,7 @@ cloneProfile() {
                 logInfoMsg "Clone - No Git authentication method found (git_username/git_token, or SSH-Agent)."
             fi
             run "  ${C_GREEN}${base_name}${T_RESET}: Cloning branch ${git_base_branch_name} on repo ${git_remote_url}" \
-                "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}:/tmp/profiles -w /tmp/profiles builder-git git clone ${custom_git_arguments} -v --progress ${git_clone_target} --branch=${git_base_branch_name} ${base_name}" \
+                "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}:/tmp/profiles -w /tmp/profiles intel/esp-git git clone ${custom_git_arguments} -v --progress ${git_clone_target} --branch=${git_base_branch_name} ${base_name}" \
                 ${LOG_FILE}
         else
             printDatedMsg "  Clone - ${C_GREEN}${base_name}${T_RESET} already exists."
@@ -156,7 +156,7 @@ resetProfile() {
 
     if [ -d ${WEB_PROFILE}/${name}/.git ]; then
         run "  ${C_GREEN}${name}${T_RESET}: Resetting branch ${git_branch_name}" \
-            "docker run --rm --privileged ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${name}:/tmp/profiles/${name} -w /tmp/profiles/${name} builder-git git reset --hard HEAD" \
+            "docker run --rm --privileged ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${name}:/tmp/profiles/${name} -w /tmp/profiles/${name} intel/esp-git git reset --hard HEAD" \
             ${LOG_FILE}
     else
         printDatedMsg "Profile ${C_GREEN}${name}${T_RESET} either is improperly configured or does not exist."
@@ -169,7 +169,7 @@ resetProfile() {
     else
         if [ -d ${WEB_PROFILE}/${base_name}/.git ]; then
             run "  ${C_GREEN}${base_name}${T_RESET}: Resetting branch ${git_base_branch_name}" \
-                "docker run --rm --privileged ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles/${base_name} -w /tmp/profiles/${base_name} builder-git git reset --hard HEAD" \
+                "docker run --rm --privileged ${DOCKER_RUN_ARGS} -v ${WEB_PROFILE}/${base_name}:/tmp/profiles/${base_name} -w /tmp/profiles/${base_name} intel/esp-git git reset --hard HEAD" \
                 ${LOG_FILE}
         else
             printDatedMsg "Profile ${C_GREEN}${base_name}${T_RESET} either is improperly configured or does not exist."
@@ -218,7 +218,7 @@ pullProfile() {
             logInfoMsg "No Git authentication method found (git_username/git_token, or SSH-Agent)."
         fi
         run "  ${C_GREEN}${name}${T_RESET}: Pulling latest from ${git_branch_name} on repo ${git_remote_url}" \
-            "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/:/tmp/profiles/ -w /tmp/profiles/${name} builder-git sh -c 'git fetch origin ${git_branch_name} && git reset --hard ${git_branch_name} && git pull origin ${git_branch_name}'" \
+            "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/:/tmp/profiles/ -w /tmp/profiles/${name} intel/esp-git sh -c 'git fetch origin ${git_branch_name} && git reset --hard ${git_branch_name} && git pull origin ${git_branch_name}'" \
             ${LOG_FILE}
     else
         printDatedErrMsg "Profile ${name} either is improperly configured or does not exist."
@@ -251,7 +251,7 @@ pullProfile() {
                 logInfoMsg "Pull - No Git authentication method found (git_username/git_token, or SSH-Agent)."
             fi
             run "  ${C_GREEN}${base_name}${T_RESET}: Pulling latest from ${git_base_branch_name} on repo ${git_remote_url}" \
-                "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/:/tmp/profiles/ -w /tmp/profiles/${base_name} builder-git sh -c 'git fetch origin ${git_base_branch_name} && git reset --hard ${git_base_branch_name} && git pull origin ${git_base_branch_name}'" \
+                "docker run --rm --privileged ${DOCKER_RUN_ARGS} ${docker_ssh_args-} -v ${WEB_PROFILE}/:/tmp/profiles/ -w /tmp/profiles/${base_name} intel/esp-git sh -c 'git fetch origin ${git_base_branch_name} && git reset --hard ${git_base_branch_name} && git pull origin ${git_base_branch_name}'" \
                 ${LOG_FILE}
         else
             printDatedErrMsg "Profile ${base_name} either is improperly configured or does not exist."
@@ -416,14 +416,14 @@ buildProfile() {
         returnCode=""
         local message="  Running Build process, this could take a very long time.  In another terminal run 'docker logs ${container_name} -f' to watch progress."
         run "${message}" \
-            "docker rm -f builder-docker > /dev/null 2>&1; \
+            "docker rm -f esp-docker > /dev/null 2>&1; \
             docker run -t --rm --privileged --name ${container_name} ${DOCKER_RUN_ARGS} --entrypoint= -v /var/run:/var/run -v /tmp:/tmp -v $(pwd)/data/persist:/opt/persist ${BASE_BIND} -v ${WEB_PROFILE}/${profile_name}:${WEB_PROFILE}/${profile_name} -v ${WEB_FILES}/${profile_name}:${WEB_FILES}/${profile_name} docker:20.10.12-dind sh -c 'apk add bash rsync git coreutils; ${WEB_PROFILE}/${profile_name}/build.sh ${WEB_PROFILE}/${profile_name} ${WEB_FILES}/${profile_name}'; \
             echo 'Finished with build, Cleaning up builder docker container...'; \
-            docker rm -f builder-docker > /dev/null 2>&1 || true; \
+            docker rm -f esp-docker > /dev/null 2>&1 || true; \
             docker rm -f ${container_name} > /dev/null 2>&1|| true" \
             ${LOG_FILE}
 
-            # docker run -d --privileged --name builder-docker ${DOCKER_RUN_ARGS} -v $(pwd)/data/tmp/builder:/var/run -v $(pwd)/data/lib/docker:/var/lib/docker docker:20.10.12-dind  && \
+            # docker run -d --privileged --name esp-docker ${DOCKER_RUN_ARGS} -v $(pwd)/data/tmp/builder:/var/run -v $(pwd)/data/lib/docker:/var/lib/docker docker:20.10.12-dind  && \
             # echo 'Waiting for Docker'; \
             # while (! docker -H unix:///$(pwd)/data/tmp/builder/docker.sock ps > /dev/null 2>&1); do echo -n '.'; sleep 0.5; done; echo 'ready' && \
 
@@ -663,6 +663,7 @@ genProfilePxeMenu() {
     local noproxyArgs=""
     local ttyArg="console=tty0"
     local httpserverArg="httpserver=@@HOST_IP@@"
+    local logserverArg="logserver=@@HOST_IP@@"
     local bootstrapArg="bootstrap=http://@@HOST_IP@@/profile/${name}/bootstrap.sh"
     local uosInitrdKernelArg="initrd=http://@@HOST_IP@@/tftp/images/uos/initrd"
     local httpFilesPathArg="httppath=/files/${name}"
@@ -673,7 +674,7 @@ genProfilePxeMenu() {
         local baseBranchArg="basebranch=http://@@HOST_IP@@/profile/${base_name}"
     fi
 
-    kernelArgs="${ttyArg} ${httpserverArg} ${bootstrapArg} ${baseBranchArg} ${httpFilesPathArg} ${kernelArgs}"
+    kernelArgs="${ttyArg} ${httpserverArg} ${logserverArg} ${bootstrapArg} ${baseBranchArg} ${httpFilesPathArg} ${kernelArgs}"
 
     # If proxy args exist, add kernel parameters to pass along the proxy settings
     if [ ! -z "${HTTPS_PROXY+x}" ] || [ ! -z "${HTTP_PROXY+x}" ]; then
@@ -843,6 +844,7 @@ genProfileIpxeGoto() {
     local initrdArgs="initrd=initrd"
     local ttyArg="console=tty0"
     local httpserverArg="httpserver=@@HOST_IP@@"
+    local logserverArg="logserver=@@HOST_IP@@"
     local bootstrapArg="bootstrap=http://@@HOST_IP@@/profile/${name}/bootstrap.sh"
     local uosInitrd="http://@@HOST_IP@@/tftp/images/uos/initrd"
     local httpFilesPathArg="httppath=/files/${name}"
@@ -853,7 +855,7 @@ genProfileIpxeGoto() {
         local baseBranchArg="basebranch=http://@@HOST_IP@@/profile/${base_name}"
     fi
 
-    kernelArgs="${initrdArgs} ${ttyArg} ${httpserverArg} ${bootstrapArg} ${baseBranchArg} ${httpFilesPathArg} ${kernelArgs}"
+    kernelArgs="${initrdArgs} ${ttyArg} ${httpserverArg} ${logserverArg} ${bootstrapArg} ${baseBranchArg} ${httpFilesPathArg} ${kernelArgs}"
 
     # If proxy args exist, add kernel parameters to pass along the proxy settings
     if [ ! -z "${HTTPS_PROXY+x}" ] || [ ! -z "${HTTP_PROXY+x}" ]; then
@@ -1038,6 +1040,7 @@ genProfileVirtualPxeBoot() {
     local noproxyArgs=""
     local ttyArg="console=ttyS0"
     local httpserverArg="httpserver=@@HOST_IP@@"
+    local logserverArg="logserver=@@HOST_IP@@"
     local bootstrapArg="bootstrap=http://@@HOST_IP@@/profile/${name}/bootstrap.sh"
     local httpFilesPathArg="httppath=/files/${name}"
 
@@ -1047,7 +1050,7 @@ genProfileVirtualPxeBoot() {
         local baseBranchArg="basebranch=http://@@HOST_IP@@/profile/${base_name}"
     fi
 
-    kernelArgs="${ttyArg} ${httpserverArg} ${bootstrapArg} ${baseBranchArg} ${httpFilesPathArg} ${kernelArgs}"
+    kernelArgs="${ttyArg} ${httpserverArg} ${logserverArg} ${bootstrapArg} ${baseBranchArg} ${httpFilesPathArg} ${kernelArgs}"
 
     # If proxy args exist, add kernel parameters to pass along the proxy settings
     if [ ! -z "${HTTPS_PROXY+x}" ] || [ ! -z "${HTTP_PROXY+x}" ]; then
@@ -1138,9 +1141,9 @@ genProfileVirtualPxeBoot() {
 
     logMsg "Booting ${name} profile with Virtual PXE."
 
-    logMsg "Running command: docker run -it --rm --privileged --net=host --cap-add=ALL --name=builder-vpxe -v /dev:/dev -v /run:/run -v $(pwd)/output/${name}:/data:shared -e RAM=${MEMORY} -e CPU='host' -e SMP=4,sockets=1,cores=4,threads=1 -e NAME=vpxe -e DISK_DEVICE=\"-drive file=/data/vdisk.${DISK_FORMAT},format=${DISK_FORMAT},index=0,media=disk\" -e IMAGE_FORMAT=${DISK_FORMAT} -e IMAGE=/data/vdisk.${DISK_FORMAT} -e IMAGE_SIZE=${DISK_SIZE}G -e IMAGE_CREATE=${IMAGE_CREATE} -e VIDEO=none -e BIOS=${BIOS} -e ADD_FLAGS=\"-kernel /data/uos-kernel -initrd /data/uos-initrd.img -append '${KERNEL_PARAMS}'\" -e USB_HUB=none builder-qemu"
+    logMsg "Running command: docker run -it --rm --privileged --net=host --cap-add=ALL --name=esp-vpxe -v /dev:/dev -v /run:/run -v $(pwd)/output/${name}:/data:shared -e RAM=${MEMORY} -e CPU='host' -e SMP=4,sockets=1,cores=4,threads=1 -e NAME=vpxe -e DISK_DEVICE=\"-drive file=/data/vdisk.${DISK_FORMAT},format=${DISK_FORMAT},index=0,media=disk\" -e IMAGE_FORMAT=${DISK_FORMAT} -e IMAGE=/data/vdisk.${DISK_FORMAT} -e IMAGE_SIZE=${DISK_SIZE}G -e IMAGE_CREATE=${IMAGE_CREATE} -e VIDEO=none -e BIOS=${BIOS} -e ADD_FLAGS=\"-kernel /data/uos-kernel -initrd /data/uos-initrd.img -append '${KERNEL_PARAMS}'\" -e USB_HUB=none intel/esp-qemu"
 
-    docker run -it --rm --privileged --net=host --cap-add=ALL --name=builder-vpxe -v /dev:/dev -v /run:/run -v $(pwd)/output/${name}:/data:shared -e RAM=${MEMORY} -e CPU='host' -e SMP=4,sockets=1,cores=4,threads=1 -e NAME=vpxe -e DISK_DEVICE="-drive file=/data/vdisk.${DISK_FORMAT},format=${DISK_FORMAT},index=0,media=disk" -e IMAGE_FORMAT=${DISK_FORMAT} -e IMAGE=/data/vdisk.${DISK_FORMAT} -e IMAGE_SIZE=${DISK_SIZE}G -e IMAGE_CREATE=${IMAGE_CREATE} -e VIDEO=none -e BIOS=${BIOS} -e ADD_FLAGS="-kernel /data/uos-kernel -initrd /data/uos-initrd.img -append '${KERNEL_PARAMS}'" -e USB_HUB=none -e NETWORK_DEVICE=e1000e builder-qemu
+    docker run -it --rm --privileged --net=host --cap-add=ALL --name=esp-vpxe -v /dev:/dev -v /run:/run -v $(pwd)/output/${name}:/data:shared -e RAM=${MEMORY} -e CPU='host' -e SMP=4,sockets=1,cores=4,threads=1 -e NAME=vpxe -e DISK_DEVICE="-drive file=/data/vdisk.${DISK_FORMAT},format=${DISK_FORMAT},index=0,media=disk" -e IMAGE_FORMAT=${DISK_FORMAT} -e IMAGE=/data/vdisk.${DISK_FORMAT} -e IMAGE_SIZE=${DISK_SIZE}G -e IMAGE_CREATE=${IMAGE_CREATE} -e VIDEO=none -e BIOS=${BIOS} -e ADD_FLAGS="-kernel /data/uos-kernel -initrd /data/uos-initrd.img -append '${KERNEL_PARAMS}'" -e USB_HUB=none -e NETWORK_DEVICE=e1000e intel/esp-qemu
 
     rm ./output/${name}/uos-cmdline ./output/${name}/uos-kernel ./output/${name}/uos-initrd.img
     sleep 2
@@ -1209,6 +1212,7 @@ genProfileUsbBoot() {
     local noproxyArgs=""
     local ttyArg="console=ttyS0"
     local httpserverArg="httpserver=@@HOST_IP@@"
+    local logserverArg="logserver=@@HOST_IP@@"
     local bootstrapArg="bootstrap=http://@@HOST_IP@@/profile/${name}/bootstrap.sh"
     local httpFilesPathArg="httppath=/files/${name}"
 
@@ -1218,7 +1222,7 @@ genProfileUsbBoot() {
         local baseBranchArg="basebranch=http://@@HOST_IP@@/profile/${base_name}"
     fi
 
-    kernelArgs="${ttyArg} ${httpserverArg} ${bootstrapArg} ${baseBranchArg} ${httpFilesPathArg} ${kernelArgs}"
+    kernelArgs="${ttyArg} ${httpserverArg} ${logserverArg} ${bootstrapArg} ${baseBranchArg} ${httpFilesPathArg} ${kernelArgs}"
 
     # If proxy args exist, add kernel parameters to pass along the proxy settings
     if [ ! -z "${HTTPS_PROXY+x}" ] || [ ! -z "${HTTP_PROXY+x}" ]; then
@@ -1292,7 +1296,7 @@ genProfileUsbBoot() {
 
     KERNEL_PARAMS=$(cat ${usb_path}/${name}/uos-cmdline)
 
-    UOS_BUILDER="builder-uos:$(docker images | grep builder-uos | awk '{print $2}' | head -1)"
+    UOS_BUILDER="intel/esp-uos-builder:$(docker images | grep esp-uos-builder | awk '{print $2}' | head -1)"
 
     if [ "${USB_RANDOM}" == "true" ]; then
         _uuid=$(docker run ${UOS_BUILDER} -c 'uuidgen')
@@ -1327,13 +1331,13 @@ genProfileUsbBoot() {
             logMsg "Preparing bootable USB stick for ${name} profile."
 
             if [[ "${builder_config_disable_uos_wifi-x}" == "true" ]]; then
-                logMsg "Running command: docker run -i --rm --privileged --net host --name builder-usb -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd)/${usb_path}/${name}:/uos:shared ${UOS_BUILDER} -c \"cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos.yml\""
+                logMsg "Running command: docker run -i --rm --privileged --net host --name esp-usb -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd)/${usb_path}/${name}:/uos:shared ${UOS_BUILDER} -c \"cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos.yml\""
                 local INITRD_CMD="cd /uos && \
                 cp /uos/uos-initrd.img /target/initrd && \
                 xzcat /uos/uos-initrd.img | gzip > /target/initrd.gz && \
                 cp /uos/uos-kernel /target/vmlinuz"
             else
-                logMsg "Running command: docker run -i --rm --privileged --net host --name builder-usb -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd)/${usb_path}/${name}:/uos:shared ${UOS_BUILDER} -c \"cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos-wifi.yml\""
+                logMsg "Running command: docker run -i --rm --privileged --net host --name esp-usb -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd)/${usb_path}/${name}:/uos:shared ${UOS_BUILDER} -c \"cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos-wifi.yml\""
                 local INITRD_CMD="cd /uos && \
                 /usr/bin/linuxkit build -format kernel+initrd /uos/uos-wifi.yml && \
                 zcat /uos/uos-wifi-initrd.img | pv | xz -T0 --check=crc32 > /target/initrd && \
@@ -1342,7 +1346,7 @@ genProfileUsbBoot() {
             fi
 
             run "Preparing bootable USB stick for ${name} profile. (~10 min)" \
-                "docker run -t --rm --privileged --net host --name builder-usb \
+                "docker run -t --rm --privileged --net host --name esp-usb \
                 -v /var/run/docker.sock:/var/run/docker.sock \
                 -v ${uosBuildPath}:/uos:shared \
                 -v ${TFTP_IMAGES}/uos/usb:/target:shared \
@@ -1481,7 +1485,7 @@ genAllProfileUsbBoot() {
     touch ${TFTP_IMAGES}/uos/usb/uos-cmdline
     # cp ${ymlPath} ${TFTP_IMAGES}/uos/usb/uos.yml
 
-    UOS_BUILDER="builder-uos:$(docker images | grep builder-uos | awk '{print $2}' | head -1)"
+    UOS_BUILDER="intel/esp-uos-builder:$(docker images | grep esp-uos-builder | awk '{print $2}' | head -1)"
 
     if [ "${USB_RANDOM}" == "true" ]; then
         _uuid=$(docker run ${UOS_BUILDER} -c 'uuidgen')
@@ -1510,7 +1514,7 @@ genAllProfileUsbBoot() {
                 cp ${initrdPath} ${TFTP_IMAGES}/uos/usb/" \
             ${LOG_FILE}
         else
-            logMsg "Running command: docker run -i --rm --privileged --net host --name builder-usb -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd)/${usb_path}/${name}:/uos:shared ${UOS_BUILDER} -c \"cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos-wifi.yml\""
+            logMsg "Running command: docker run -i --rm --privileged --net host --name esp-usb -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd)/${usb_path}/${name}:/uos:shared ${UOS_BUILDER} -c \"cd /uos && /usr/bin/linuxkit build -format kernel+initrd /uos/uos-wifi.yml\""
             local INITRD_CMD="cd /uos && \
             /usr/bin/linuxkit build -format kernel+initrd /uos/uos-wifi.yml && \
             zcat /uos/uos-wifi-initrd.img | pv | xz -T0 --check=crc32 > /target/initrd && \
@@ -1518,7 +1522,7 @@ genAllProfileUsbBoot() {
             mv /uos/uos-wifi-kernel /target/vmlinuz"
 
             run "Preparing bootable USB stick for ${name} profiles. (~10 min)" \
-                "docker run -t --rm --privileged --net host --name builder-usb \
+                "docker run -t --rm --privileged --net host --name esp-usb \
                 -v /var/run/docker.sock:/var/run/docker.sock \
                 -v ${uosBuildPath}:/uos:shared \
                 -v ${TFTP_IMAGES}/uos/usb:/target:shared \

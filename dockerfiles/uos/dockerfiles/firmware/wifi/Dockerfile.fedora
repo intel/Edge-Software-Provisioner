@@ -1,0 +1,30 @@
+# Copyright (C) 2020 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM fedora:32 as kernel-builder
+LABEL maintainer "Bryan J Rodriguez <bryan.j.rodriguez@intel.com>"
+
+ARG FIRMWARE=20220310-130.fc36.noarch
+ARG FEDORA_RELEASE=36
+
+RUN dnf install -y \
+    wget \
+    tar \
+    kmod \
+    cpio
+
+WORKDIR /build
+RUN mkdir /out
+
+# https://download-ib01.fedoraproject.org/pub/fedora/linux/releases/32/Everything/x86_64/os/Packages/l/linux-firmware-20200316-106.fc32.noarch.rpm
+
+RUN wget https://download-ib01.fedoraproject.org/pub/fedora/linux/releases/${FEDORA_RELEASE}/Everything/x86_64/os/Packages/l/linux-firmware-${FIRMWARE}.rpm
+
+RUN rpm2cpio linux-firmware-${FIRMWARE}.rpm | cpio -i --make-directories && \
+    mv usr/lib /out/
+
+FROM scratch
+ENTRYPOINT []
+CMD []
+WORKDIR /
+COPY --from=kernel-builder /out/* /lib/

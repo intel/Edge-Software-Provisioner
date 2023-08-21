@@ -40,9 +40,9 @@ if [ ! -f ${BUILDER_PATH}/data/usr/share/nginx/html/mbr.bin ]; then
 fi
 
 # Old method of detecting if this running from a container
-# if [ "${TAG_PREFIX}" != "builder-dnsmasq" ]; then
+# if [ "${TAG_PREFIX}" != "esp-dnsmasq" ]; then
 
-if [ ! -d ${BUILDER_PATH}/root/.git ]; then
+if [ ! -d ${BUILDER_PATH}/root/.git ] && [ ! -f ${BUILDER_PATH}/root/.git ]; then
   if [ ! -f ${BUILDER_PATH}/template/pxe_bg.png ]; then 
     echo "Copying templates..."
     cp -a /opt/core/template/* ${BUILDER_PATH}/template/
@@ -53,41 +53,48 @@ if [ ! -d ${BUILDER_PATH}/root/.git ]; then
     cp -a /opt/core/conf/* ${BUILDER_PATH}/conf/
   fi
 
-  rsync -rtc /opt/core/*.sh ${BUILDER_PATH}/
-  rsync -rtc /opt/core/*.sh ${BUILDER_PATH}/root/
+  rsync -rtc /opt/core/build.sh ${BUILDER_PATH}/
+  rsync -rtc /opt/core/build.sh ${BUILDER_PATH}/root/
   rsync -rtc /opt/core/scripts ${BUILDER_PATH}/
   rsync -rtc /opt/core/scripts ${BUILDER_PATH}/root/
   rsync -rtc /opt/core/dockerfiles ${BUILDER_PATH}/
+  rsync -rtc ${BUILDER_PATH}/root/docker-compose.yml ${BUILDER_PATH}/
   
   # Make sure UOS is in the correct location
   if [ ! -f ${BUILDER_PATH}/data/srv/tftp/images/uos/vmlinuz ]; then
     rsync -rtc /opt/core/data/ ${BUILDER_PATH}/data/
   fi
-  
+ 
+  TAG_PREFIX_TMP=$(docker ps | grep esp-core | awk '{print $2}' | head -n 1)
+  TAG_POSTFIX=$(echo ${TAG_PREFIX_TMP} | awk -F ':' '{print $2}')
+  TAG_PREFIX=${TAG_PREFIX_TMP/\/esp-core:${TAG_POSTFIX}/}
+
+  IMAGES="${CONTAINER_IMAGES}"
+  if [ "${TAG_PREFIX}" != "" ] && [ "${TAG_PREFIX}" != "${TAG_PREFIX_TMP}" ]; then
+    for image in ${IMAGES}; do
+      if ( docker images | grep "${image} " > /dev/null 2>&1 ); then
+        echo "docker image ${image} exists."
+      elif ( ! docker pull ${image} > /dev/null 2>&1 ); then
+         echo "docker image ${image} is unavailable for pulling."
+      fi
+      echo "docker image ${image} downloaded."
+      stip_postfix=${image/:${TAG_POSTFIX}/}
+      orig_image=${stip_postfix/${TAG_PREFIX}\//intel\/}
+      docker tag ${image} ${orig_image}
+    done
+  fi
+
+  cd ${BUILDER_PATH} && ./build.sh -C -S -P -g
+  rsync -rtc /opt/core/*.sh ${BUILDER_PATH}/
+  rsync -rtc /opt/core/*.sh ${BUILDER_PATH}/root/
+
   # Wait for dnsmasq service to start
-  while (! docker ps | grep _dnsmasq_1 > /dev/null 2>&1 ); do 
+  while (! docker ps | grep esp-dnsmasq > /dev/null 2>&1 ); do 
     echo "Waiting for dnsmasq to start"; 
     sleep 1; 
   done
 
-  TAG_PREFIX_TMP=$(docker ps | grep _dnsmasq_1 | awk '{print $2}' | head -n 1)
-  TAG_PREFIX=${TAG_PREFIX_TMP%%/builder-dnsmasq}
-
-  IMAGES="builder-core builder-gitea builder-dnsmasq builder-squid builder-web builder-git builder-aws-cli builder-uos builder-qemu builder-certbot builder-smb builder-dyn-profile uos-kernel uos-wlan:v1.0 uos-firmware-wifi:v1.0 uos-dyninit:v1.0"
-  if [ "${TAG_PREFIX}" != "" ] && [ "${TAG_PREFIX}" != "${TAG_PREFIX_TMP}" ]; then
-    for image in ${IMAGES}; do
-      if ( docker images | grep "${TAG_PREFIX}/${image} " > /dev/null 2>&1 ); then
-        echo "docker image ${TAG_PREFIX}/${image} exists."
-      else
-        docker pull ${TAG_PREFIX}/${image}
-      fi
-      docker tag ${TAG_PREFIX}/${image} ${image/uos-/uos\/}
-    done
-  fi
-
-  cd ${BUILDER_PATH}
-
-  ./build.sh -C -S && \
+  ./build.sh -C -S -g -n && \
   echo "Watching for changes in ${BUILDER_PATH}/conf/config.yml" && \
   inotifywait -e modify -m ${BUILDER_PATH}/conf/ |
   while read -r directory events filename; do
@@ -95,8 +102,8 @@ if [ ! -d ${BUILDER_PATH}/root/.git ]; then
       echo "${BUILDER_PATH}/conf/config.yml has changed. Restarting services"
       # Sleeping for user to run build manually
       sleep 15
-      ./build.sh -C -S && \
-      docker restart $(docker ps | grep _dnsmasq_1 | awk '{print $1}')
+      ./build.sh -C -S -g && \
+      docker restart $(docker ps | grep esp-dnsmasq | awk '{print $1}')
     fi
   done
 else
