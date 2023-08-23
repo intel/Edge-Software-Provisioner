@@ -137,7 +137,7 @@ else
         if [[ "${builder_config_dynamic_profile__enabled-x}" == "true" ]]; then
             DOCKER_COMPOSE_SERVICES="${DOCKER_COMPOSE_SERVICES} dyn-profile"
         fi
-        if [[ "${builder_config_disable_fluent_logging-false}" == "false" ]]; then
+        if [[ "${builder_config_disable_fluent_logging-true}" == "false" ]]; then
             DOCKER_COMPOSE_SERVICES="${DOCKER_COMPOSE_SERVICES} logging-server"
         fi
         docker-compose up -d ${DOCKER_COMPOSE_SERVICES}

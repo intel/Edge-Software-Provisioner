@@ -99,7 +99,7 @@ files:
       # ssh-rsa fill-this-in-with-an-ssh-key-if-you-want
     mode: "0600"
   - path: etc/docker/daemon.json
-    contents: '{"debug": true}'
+    contents: '{"debug": true, "storage-driver": "vfs"}'
   - path: usr/local/bin/uos
     contents: |
       hostname uos
