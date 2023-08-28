@@ -247,7 +247,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Known Problem
 - Missing instructions of how to build the boot.wim, boot.sdi and BCD from Microsoft ADK
 
-## [3.1.4] - 2023-08-22
+## [3.1.4] - 2023-08-28
 ### Changed
 - Fixed conf/config.yml unset variable disable_fluent_logging
 - Fixed ESP uOS MOTD
