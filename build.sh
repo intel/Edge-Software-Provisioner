@@ -545,7 +545,7 @@ else
 fi
 
 #Enable/Disable fluent logging for dnsmasq service
-if [[ "${builder_config_disable_fluent_logging-false}" == "false" ]]; then
+if [[ "${builder_config_disable_fluent_logging-true}" == "false" ]]; then
     if grep -q '# driver: "fluentd"' docker-compose.yml; then
         sed -zEi 's|driver: "json-file"\n[^\n]*options:\n[^\n]*max-file: "5"\n[^\n]*max-size: "1m"(\n[^\n]*# driver: "fluentd")|# driver: "json-file"\n      # options:\n        # max-file: "5"\n        # max-size: "1m"\1|' docker-compose.yml
         sed -zEi 's|# driver: "fluentd"[^.]*"localhost:24224"|driver: "fluentd"\n      options:\n        fluentd-address: "localhost:24224"|' docker-compose.yml

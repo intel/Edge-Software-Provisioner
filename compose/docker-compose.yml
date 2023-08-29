@@ -11,9 +11,9 @@ networks:
 
 services:
   core:
-    image: intel/esp-core:v3.1.2
+    image: intel/esp-core:v3.1.4
     environment:
-      - CONTAINER_IMAGES=intel/esp-core:v3.1.2 intel/esp-gitea:v3.1.2 intel/esp-dnsmasq:v3.1.2 intel/esp-squid:v3.1.2 intel/esp-web:v3.1.2 intel/esp-git:v3.1.2 intel/esp-aws-cli:v3.1.2 intel/esp-uos-builder:v3.1.2 intel/esp-qemu:v3.1.2 intel/esp-certbot:v3.1.2 intel/esp-smb:v3.1.2 intel/esp-dyn-profile:v3.1.2 intel/esp-logging-agent:v3.1.2 intel/esp-uos-kernel:v3.1.2 intel/esp-uos-wifi:v3.1.2 intel/esp-uos-firmware-wifi:v3.1.2 intel/esp-uos-firmware-lan:v3.1.2 intel/esp-uos-dyninit:v3.1.2
+      - CONTAINER_IMAGES=intel/esp-core:v3.1.4 intel/esp-gitea:v3.1.2 intel/esp-dnsmasq:v3.1.2 intel/esp-squid:v3.1.2 intel/esp-web:v3.1.2 intel/esp-git:v3.1.2 intel/esp-aws-cli:v3.1.2 intel/esp-uos-builder:v3.1.2 intel/esp-qemu:v3.1.2 intel/esp-certbot:v3.1.2 intel/esp-smb:v3.1.2 intel/esp-dyn-profile:v3.1.2 intel/esp-logging-agent:v3.1.2 intel/esp-uos-kernel:v3.1.2 intel/esp-uos-wifi:v3.1.2 intel/esp-uos-firmware-wifi:v3.1.2 intel/esp-uos-firmware-lan:v3.1.2 intel/esp-uos-dyninit:v3.1.2
       - BUILDER_PATH=${PWD}
       - PATH=${PWD}:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin
       - http_proxy=${http_proxy:-}
